@@ -9,6 +9,16 @@
 #include <fstream>  // file input
 #include <pthread.h>// pthreads
 
+typedef struct ThreadData {
+    // file name and connection socket go here
+    // gets passed to readFile
+} ThreadData;
+
+void readFile(void* arg) {
+    // the pthread file read routine
+    //
+}
+
 int main(int argc, char** argv) {
     // make a threadpool
 

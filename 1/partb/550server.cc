@@ -16,6 +16,9 @@ int main(int argc, char** argv) {
 
     // while loop catching incoming connections
 
+    // use condition variables to wake threads-
+    // https://computing.llnl.gov/tutorials/pthreads/#ConditionVariables
+
     // thread reads requested file
     // or ceases execution in the event of read error
     // and is then re-entered into thread pool

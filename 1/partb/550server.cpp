@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <string>
+#include <errno.h>
 
 using std::cerr;
 using std::cout;
@@ -22,6 +23,8 @@ using std::endl;
 using std::ifstream;
 using std::istreambuf_iterator;
 using std::string;
+
+extern int errno;
 
 typedef struct ThreadData {
     // file name and connection socket go here
@@ -61,6 +64,38 @@ bool readFile(std::string abs_file_path, std::string *file_content) {
     }
 }
 
+//write the given buffer to the file descriptor.
+//Returns the length that is written to the socket.
+int writeToSocket(int fd, string *buf)
+{
+    int writelen = buf->size();
+    int written_so_far = 0;
+
+    while (written_so_far < writelen) 
+    {
+        ssize_t res = write(fd,
+                      buf + written_so_far,
+                      writelen - written_so_far);
+        written_so_far += res;
+
+    // Check for disconnection (EOF).
+    if (res == 0) {
+        break;
+    }
+
+    // Check for an error, fatal or otherwise.
+    if (res == -1) {
+        if ((errno == EAGAIN) || (errno == EINTR))
+        continue;
+
+        // Fatal error.
+        return -1;
+        }
+    }
+
+    return written_so_far;
+}
+
 int main(int argc, char** argv) {
     int fd;
 
@@ -91,9 +126,11 @@ int main(int argc, char** argv) {
 
     // thread reads requested file
     string file_content;
+    //TODO replace the abs_path
     string abs_path = "/homes/iws/pingyh/550/hw/1/partb/550server.cpp";
     readFile(abs_path, &file_content);
-    cout<<"file content: " <<file_content<<endl;
+
+    writeToSocket(fd, &file_content);
     // or ceases execution in the event of read error
     // and is then re-entered into thread pool
 }

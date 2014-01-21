@@ -115,6 +115,14 @@ int main(int argc, char** argv) {
 
         exit(0);
     }
+	
+	// set the socket to non-blocking io
+    if ((flags = fcntl(fd, F_GETFL, 0)) < 0) {
+        flags = 0;
+    }
+    fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+	
+	
     // make a threadpool
 
     // open socket to listen

@@ -30,7 +30,10 @@ typedef struct ThreadData {
     int sock;
 } ThreadData;
 
-//read file
+//read file from disk
+//First arg is the absolute path of the file,
+//Second arg is the pointer where the content of the file will be wrote to.
+//The function will return false if it fails to read the file
 bool readFile(std::string abs_file_path, std::string *file_content) {
     // the pthread file read routine
     //

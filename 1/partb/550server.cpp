@@ -14,6 +14,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "./FileReader.h"
+
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -28,28 +30,36 @@ typedef struct ThreadData {
 void readFile(std::string file_name) {
     // the pthread file read routine
     //
-    std::cout<<"printting"<<std::endl;
+    FileReader fr(file_name);
+    std::string file_content;
+    if (!fr.ReadFile(&file_content)) {
+      cerr << "Unable to read file: "
+           << file_name
+           << endl;
+    }else
+    {
+    }
 }
 
 int main(int argc, char** argv) {
     int fd;
 
     // check for correct # of args
-    if (argc != 3) {
-        cerr << "Must have exactly 2 arguments." << endl;
-        cerr << "Usage:" << endl;
-        cerr << argv[0] << " <ipv4 address of server> <listening port>" << endl;
-        cerr << "ex: " << argv[0] <<  " 127.0.0.1 9000" << endl;
+    //if (argc != 3) {
+    //    cerr << "Must have exactly 2 arguments." << endl;
+    //    cerr << "Usage:" << endl;
+    //    cerr << argv[0] << " <ipv4 address of server> <listening port>" << endl;
+    //    cerr << "ex: " << argv[0] <<  " 127.0.0.1 9000" << endl;
 
-		exit(0);
-	}
+	//	exit(0);
+	//}
 
-    // create a new socket for the server
-    if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        cerr << "cannot create socket" << endl;
+    //// create a new socket for the server
+    //if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    //    cerr << "cannot create socket" << endl;
 
-        exit(0);
-    }
+    //    exit(0);
+    //}
     // make a threadpool
 
     // open socket to listen
@@ -60,7 +70,7 @@ int main(int argc, char** argv) {
     // https://computing.llnl.gov/tutorials/pthreads/#ConditionVariables
 
     // thread reads requested file
-    readFile("file name");
+    readFile("./550server.cpp");
     // or ceases execution in the event of read error
     // and is then re-entered into thread pool
 }

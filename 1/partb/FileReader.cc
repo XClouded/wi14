@@ -1,23 +1,3 @@
-/*
- * Copyright 2011 Steven Gribble
- *
- *  This file is part of the UW CSE 333 course project sequence
- *  (333proj).
- *
- *  333proj is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  333proj is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with 333proj.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #include "./FileReader.h"
 
 #include <sys/stat.h>
@@ -29,8 +9,6 @@
 #include <sstream>
 #include <string>
 
-#include "./HttpUtils.h"
-
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -38,17 +16,7 @@ using std::ifstream;
 using std::istreambuf_iterator;
 using std::string;
 
-namespace hw3 {
-
 bool FileReader::ReadFile(std::string *str) {
-  // STEP 1 -- implement ReadFile().
-  // test that the filename is under the base
-  // directory
-  if (!IsPathSafe(basedir_, fname_)) {
-    cerr << "Path is not safe." << endl;
-    return false;
-  }
-
   int status;
   struct stat st_buf;
 
@@ -71,5 +39,4 @@ bool FileReader::ReadFile(std::string *str) {
     cerr << "File is not a file but a directory." << endl;
     return false;
   }
-}
 }

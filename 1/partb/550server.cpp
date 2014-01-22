@@ -25,6 +25,9 @@
 #include <unistd.h>
 #include <poll.h>
 
+#define BUSY 0
+#define NOT_BUSY 1
+
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -36,10 +39,11 @@ using std::ios;
 extern int errno;
 
 typedef struct ThreadData {
-    // file name and connection socket go here
-    // gets passed to readFile
 	char *fileName;
     int sock;
+    pthread_mutex_t mutex;
+    pthread_cond_t cv;
+    int status;
 } ThreadData;
 
 //read file from disk

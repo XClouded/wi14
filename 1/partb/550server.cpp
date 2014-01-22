@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <signal.h>
 #include <cstring>
 
@@ -140,7 +141,7 @@ int main(int argc, char** argv) {
     // bind the socket
     bzero((char *) &srv_addr, sizeof(srv_addr));
     srv_addr.sin_family = AF_INET;
-    srv_addr.sin_addr.s_addr = INADDR_ANY;
+    srv_addr.sin_addr.s_addr = inet_addr(argv[1]);
     srv_addr.sin_port = htons(portno);
     if (bind(sckfd, (struct sockaddr *) &srv_addr,
              sizeof(srv_addr)) < 0) {

@@ -104,7 +104,7 @@ int writeToSocket(int fd, string *buf)
 int main(int argc, char** argv) {
     struct sigaction act;
     struct sockaddr_in srv_addr, cli_addr;
-    int sckfd, portno, fcntlflags;
+    int sckfd, portno, fcntlflags, cli_len, newsckfd;
 
     //check for correct # of args
     if (argc != 3) {
@@ -146,10 +146,22 @@ int main(int argc, char** argv) {
     if (bind(sckfd, (struct sockaddr *) &srv_addr,
              sizeof(srv_addr)) < 0) {
         cerr << "ERROR on binding" << endl;
+        exit(0);
     }
 
+    // listen for incoming connections, limit to 5
     listen(sckfd,5);
-	
+
+    // accept a new incoming connection
+    cli_len = sizeof(cli_addr);
+    newsckfd = accept(sckfd,
+                (struct sockaddr *) &cli_addr,
+                &cli_len);
+    if (newsckfd < 0) {
+        cerr << "Error on connection accept" << endl;
+    }
+
+
     // make a threadpool
 
     // open socket to listen

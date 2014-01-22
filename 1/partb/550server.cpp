@@ -113,7 +113,8 @@ int writeToSocket(int fd, char *buf)
 int main(int argc, char** argv) {
     struct sigaction act;
     struct sockaddr_in srv_addr, cli_addr;
-    int sckfd, portno, fcntlflags, cli_len, newsckfd;
+    int sckfd, portno, fcntlflags, newsckfd;
+    unsigned int cli_len;
 
     //check for correct # of args
     if (argc != 3) {
@@ -158,8 +159,12 @@ int main(int argc, char** argv) {
         exit(0);
     }
 
+    cout << "bind done" << endl;
+
     // listen for incoming connections, limit to 5
     listen(sckfd,5);
+
+    cout << "listen done" << endl;
 
     // accept a new incoming connection
     cli_len = sizeof(cli_addr);
@@ -170,6 +175,7 @@ int main(int argc, char** argv) {
         cerr << "Error on connection accept" << endl;
     }
 
+    cout << "accept done" << endl;
 
     // make a threadpool
 

@@ -22,6 +22,8 @@
 #include <arpa/inet.h>
 #include <signal.h>
 #include <cstring>
+#include <unistd.h>
+#include <poll.h>
 
 using std::cerr;
 using std::cout;
@@ -108,6 +110,33 @@ int writeToSocket(int fd, char *buf)
     }
 
     return written_so_far;
+}
+
+void read_from_pipe (int file)
+{
+    FILE *stream;
+    int c;
+    stream = fdopen (file, "r");
+    while ((c = fgetc (stream)) != EOF)
+        putchar (c);
+    fclose (stream);
+}
+
+void test_on_pipe()
+{
+    int pfd[2];
+    pipe2(pfd, O_NONBLOCK);
+    string str = "hello";
+    write(pfd[1], str.c_str(), 6);
+    struct pollfd poll_fd[1];
+    poll_fd[0].fd = pfd[0];
+    poll_fd[0].events = POLLIN;
+    int rv = poll(poll_fd, 1, 1000);
+    cout<<"rv: "<<rv<<endl;
+    //char *c = (char *)malloc(10);
+    //read(pfd[0], c, 6);
+    read_from_pipe(pfd[0]);
+
 }
 
 int main(int argc, char** argv) {

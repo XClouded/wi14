@@ -43,6 +43,7 @@ extern int errno;
 typedef struct ThreadData {
 	char *fileName;
     int sock;
+    pthread_t pthread;
     pthread_mutex_t mutex;
     pthread_cond_t cv;
     int status;
@@ -128,6 +129,10 @@ void read_from_pipe (int file)
     fclose (stream);
 }
 
+void* fileIOHelper(void* args) {
+
+}
+
 void test_on_pipe()
 {
     int pfd[2];
@@ -148,10 +153,11 @@ void test_on_pipe()
 int main(int argc, char** argv) {
     struct sigaction act;
     struct sockaddr_in srv_addr, cli_addr;
-    int sckfd, portno, fcntlflags, newsckfd;
+    int sckfd, portno, fcntlflags, newsckfd, i;
     unsigned int cli_len;
-    pthread_t threads[NUM_PTHREADS];
-    pthread_attr_t attr;
+    ThreadData threads[NUM_PTHREADS];
+    //pthread_t threads[NUM_PTHREADS];
+    pthread_attr_t pt_attr;
 
     //check for correct # of args
     if (argc != 3) {
@@ -164,8 +170,14 @@ int main(int argc, char** argv) {
 	}
 
     // initialize the pthreads
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    pthread_attr_init(&pt_attr);
+    pthread_attr_setdetachstate(&pt_attr, PTHREAD_CREATE_JOINABLE);
+
+    for(i = 0; i < NUM_PTHREADS; ++i) {
+        pthread_mutex_init(&threads[i].mutex, NULL);
+        pthread_cond_init (&threads[i].cv, NULL);
+        pthread_create(&threads[i].pthread, &pt_attr, fileIOHelper, (void *)(&threads[i]));
+    }
 
     // create a new socket for the server
     if ((sckfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {

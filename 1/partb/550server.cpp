@@ -129,7 +129,9 @@ void read_from_pipe (int file)
     fclose (stream);
 }
 
+// the worker function for the pthreads
 void* fileIOHelper(void* args) {
+    ThreadData* td = (ThreadData*)args;
 
 }
 
@@ -209,13 +211,18 @@ int main(int argc, char** argv) {
     if (bind(sckfd, (struct sockaddr *) &srv_addr,
              sizeof(srv_addr)) < 0) {
         cerr << "ERROR on binding" << endl;
+        close(sckfd);
         exit(0);
     }
 
     cout << "bind done" << endl;
 
     // listen for incoming connections, limit to 5
-    listen(sckfd,5);
+    if(listen(sckfd,5) < 0) {
+        cerr << "ERROR on listen" << endl;
+        close(sckfd);
+        exit(0);
+    }
 
     cout << "listen done" << endl;
 

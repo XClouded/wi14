@@ -28,6 +28,8 @@
 #define BUSY 0
 #define NOT_BUSY 1
 
+#define NUM_PTHREADS 5
+
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -148,6 +150,8 @@ int main(int argc, char** argv) {
     struct sockaddr_in srv_addr, cli_addr;
     int sckfd, portno, fcntlflags, newsckfd;
     unsigned int cli_len;
+    pthread_t threads[NUM_PTHREADS];
+    pthread_attr_t attr;
 
     //check for correct # of args
     if (argc != 3) {
@@ -158,6 +162,10 @@ int main(int argc, char** argv) {
 
 		exit(0);
 	}
+
+    // initialize the pthreads
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
     // create a new socket for the server
     if ((sckfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {

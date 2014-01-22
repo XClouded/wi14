@@ -133,6 +133,25 @@ void read_from_pipe (int file)
 void* fileIOHelper(void* args) {
     ThreadData* td = (ThreadData*)args;
 
+    // lock the mutex for this thread
+    pthread_mutex_lock(&td->mutex);
+    while (true) {
+        td->status = NOT_BUSY;
+
+        // wait for the condition variable to be triggered to do file IO
+        pthread_cond_wait(&td->cv, &td->mutex);
+        td->status = BUSY;
+
+        // READ FILE GOES HERE
+        // GOTTA HAVE THE FILE CACHE READY
+
+        // POKE THE PIPE HERE
+    }
+
+    pthread_mutex_unlock(&td->mutex);
+
+    // never gonna get here, but keeps the compiler happy
+    return args;
 }
 
 void test_on_pipe()
@@ -236,6 +255,8 @@ int main(int argc, char** argv) {
     }
 
     cout << "accept done" << endl;
+
+    // TODO: WRITE STUFF OUT TO SOCKET SOMEHOW
 
     // make a threadpool
 

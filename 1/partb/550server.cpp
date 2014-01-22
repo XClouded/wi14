@@ -17,6 +17,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <signal.h>
+#include <cstring>
 
 using std::cerr;
 using std::cout;
@@ -106,7 +111,9 @@ int writeToSocket(int fd, char *buf)
 }
 
 int main(int argc, char** argv) {
-    int fd;
+    struct sigaction act;
+    struct sockaddr_in srv_addr, cli_addr;
+    int sckfd, portno, fcntlflags, cli_len, newsckfd;
 
     //check for correct # of args
     if (argc != 3) {
@@ -119,19 +126,51 @@ int main(int argc, char** argv) {
 	}
 
     // create a new socket for the server
-    if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((sckfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         cerr << "cannot create socket" << endl;
 
         exit(0);
     }
+
+    // ignore SIGPIPE
+    act.sa_handler=SIG_IGN;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags=0;
+    sigaction(SIGPIPE, &act, NULL);
 	
+    // get the port#
+    portno = atoi(argv[2]);
+
 	// set the socket to non-blocking io
-    if ((flags = fcntl(fd, F_GETFL, 0)) < 0) {
-        flags = 0;
+    if ((fcntlflags = fcntl(sckfd, F_GETFL, 0)) < 0) {
+        fcntlflags = 0;
     }
-    fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+    fcntl(sckfd, F_SETFL, fcntlflags | O_NONBLOCK);
 	
-	
+    // bind the socket
+    bzero((char *) &srv_addr, sizeof(srv_addr));
+    srv_addr.sin_family = AF_INET;
+    srv_addr.sin_addr.s_addr = inet_addr(argv[1]);
+    srv_addr.sin_port = htons(portno);
+    if (bind(sckfd, (struct sockaddr *) &srv_addr,
+             sizeof(srv_addr)) < 0) {
+        cerr << "ERROR on binding" << endl;
+        exit(0);
+    }
+
+    // listen for incoming connections, limit to 5
+    listen(sckfd,5);
+
+    // accept a new incoming connection
+    cli_len = sizeof(cli_addr);
+    newsckfd = accept(sckfd,
+                (struct sockaddr *) &cli_addr,
+                &cli_len);
+    if (newsckfd < 0) {
+        cerr << "Error on connection accept" << endl;
+    }
+
+
     // make a threadpool
 
     // open socket to listen
@@ -146,7 +185,7 @@ int main(int argc, char** argv) {
     string abs_path = "/homes/iws/pingyh/550/hw/1/partb/550server.cpp";
     char *file_content = readFile(abs_path);
 
-    writeToSocket(fd, file_content);
+    writeToSocket(sckfd, file_content);
     // or ceases execution in the event of read error
     // and is then re-entered into thread pool
 }

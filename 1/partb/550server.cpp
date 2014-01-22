@@ -14,7 +14,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sstream>
-#include <string>
+#include <string.h>
+#include <stdio.h>
 #include <errno.h>
 
 using std::cerr;
@@ -23,6 +24,7 @@ using std::endl;
 using std::ifstream;
 using std::istreambuf_iterator;
 using std::string;
+using std::ios;
 
 extern int errno;
 
@@ -34,10 +36,7 @@ typedef struct ThreadData {
 } ThreadData;
 
 //read file from disk
-//First arg is the absolute path of the file,
-//Second arg is the pointer where the content of the file will be wrote to.
-//The function will return false if it fails to read the file
-bool readFile(std::string abs_file_path, std::string *file_content) {
+char *readFile(std::string abs_file_path) {
     // the pthread file read routine
     //
     int status;
@@ -45,30 +44,40 @@ bool readFile(std::string abs_file_path, std::string *file_content) {
 
     status = stat(abs_file_path.c_str(), &st_buf);
     if (status != 0) {
-    cerr << "Error finding status of file system object." << endl;
-    return false;
+        cerr << "Error finding status of file system object." << endl;
+        //return false;
     }
 
     // test that this file name is actually a file and not a
     // directory
     if (S_ISREG(st_buf.st_mode)) {
     // read the file into a string
-    ifstream t(abs_file_path.c_str());
-    string file_str((istreambuf_iterator<char>(t)),
-        istreambuf_iterator<char>());
-    *file_content = file_str;
-      return true;
+        //ifstream t(abs_file_path.c_str());
+        //string file_str((istreambuf_iterator<char>(t)), 
+        //                istreambuf_iterator<char>());
+        //*file_content = file_str;
+        ifstream ifs(abs_file_path.c_str(), ios::binary|ios::ate);
+        ifstream::pos_type pos = ifs.tellg();
+        char *result = new char[pos];
+
+        ifs.seekg(0, ios::beg);
+        ifs.read(result, pos);
+
+        return result;
+        //return true;
     } else {
-    cerr << "File is not a file but a directory." << endl;
-      return false;
+        cerr << "File is not a file but a directory." << endl;
+      //return false;
     }
+    return NULL;
 }
 
 //write the given buffer to the file descriptor.
 //Returns the length that is written to the socket.
-int writeToSocket(int fd, string *buf)
+int writeToSocket(int fd, char *buf)
 {
-    int writelen = buf->size();
+    int writelen = strlen(buf);
+    cout<<"len: "<<writelen<<endl;
     int written_so_far = 0;
 
     while (written_so_far < writelen) 
@@ -133,12 +142,11 @@ int main(int argc, char** argv) {
     // https://computing.llnl.gov/tutorials/pthreads/#ConditionVariables
 
     // thread reads requested file
-    string file_content;
     //TODO replace the abs_path
     string abs_path = "/homes/iws/pingyh/550/hw/1/partb/550server.cpp";
-    readFile(abs_path, &file_content);
+    char *file_content = readFile(abs_path);
 
-    writeToSocket(fd, &file_content);
+    writeToSocket(fd, file_content);
     // or ceases execution in the event of read error
     // and is then re-entered into thread pool
 }

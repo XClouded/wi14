@@ -12,6 +12,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 #include <sstream>
 #include <string.h>
@@ -26,6 +27,11 @@
 #include <poll.h>
 #include <map>
 
+#define BUSY 0
+#define NOT_BUSY 1
+
+#define NUM_PTHREADS 5
+
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -38,10 +44,12 @@ using std::map;
 extern int errno;
 
 typedef struct ThreadData {
-    // file name and connection socket go here
-    // gets passed to readFile
 	char *fileName;
     int sock;
+    pthread_t pthread;
+    pthread_mutex_t mutex;
+    pthread_cond_t cv;
+    int status;
 } ThreadData;
 
 //read file from disk
@@ -115,11 +123,10 @@ int writeToSocket(int fd, string *buf)
     return written_so_far;
 }
 
-char *read_from_fd (int file)
+char *read_from_fd (int fd)
 {
-    cout<<"in read from fd"<<endl;
     FILE *stream;
-    stream = fdopen (file, "r");
+    stream = fdopen (fd, "r");
     //fseek(stream, 0, SEEK_END);
     //long pos = ftell(stream);
     //fseek(stream, 0, SEEK_SET);
@@ -131,24 +138,52 @@ char *read_from_fd (int file)
     //return bytes;
 
     int c;
-    int size = 24;
+    int size = 8;
     char *buf = (char *)malloc(size);
     char *ptr = buf;
     while ((c = fgetc (stream)) != EOF)
     {
-        if ((ptr - buf) >= size)
+        if ((ptr - buf) >= size - 1)
         {
             char *new_buf = (char *)malloc(size * 2);
             memcpy(new_buf, buf, size);
             free(buf);
             buf = new_buf;
-            ptr = new_buf + size;
+            ptr = new_buf + size - 1;
             size *= 2;
         }
         *ptr = c;
         ptr++;
     }
     fclose (stream);
+    *ptr = '\0';
+    cout<<buf<<endl;
+    return buf;
+}
+
+// the worker function for the pthreads
+void* fileIOHelper(void* args) {
+    ThreadData* td = (ThreadData*)args;
+
+    // lock the mutex for this thread
+    pthread_mutex_lock(&td->mutex);
+    while (true) {
+        td->status = NOT_BUSY;
+
+        // wait for the condition variable to be triggered to do file IO
+        pthread_cond_wait(&td->cv, &td->mutex);
+        td->status = BUSY;
+
+        // READ FILE GOES HERE
+        // GOTTA HAVE THE FILE CACHE READY
+
+        // POKE THE PIPE HERE
+    }
+
+    pthread_mutex_unlock(&td->mutex);
+
+    // never gonna get here, but keeps the compiler happy
+    return args;
 }
 
 void test_on_pipe()
@@ -168,13 +203,26 @@ void test_on_pipe()
 
 }
 
+char *read_from_socket(int socket_fd)
+{
+    int len = 0;
+    ioctl(socket_fd, FIONREAD, &len);
+    char *buf = (char *)malloc(len);
+    len = read(socket_fd, buf, len);
+    return buf;
+}
+
 int main(int argc, char** argv) {
     struct sigaction act;
     struct sockaddr_in srv_addr, cli_addr;
-    int sckfd, portno, fcntlflags, newsckfd;
+    int sckfd, portno, fcntlflags, newsckfd, i;
     unsigned int cli_len;
     map <string, string> path_to_file;
     
+    ThreadData threads[NUM_PTHREADS];
+    //pthread_t threads[NUM_PTHREADS];
+    pthread_attr_t pt_attr;
+
     //check for correct # of args
     if (argc != 3) {
         cerr << "Must have exactly 2 arguments." << endl;
@@ -184,6 +232,16 @@ int main(int argc, char** argv) {
 
 		exit(0);
 	}
+
+    // initialize the pthreads
+    pthread_attr_init(&pt_attr);
+    pthread_attr_setdetachstate(&pt_attr, PTHREAD_CREATE_JOINABLE);
+
+    for(i = 0; i < NUM_PTHREADS; ++i) {
+        pthread_mutex_init(&threads[i].mutex, NULL);
+        pthread_cond_init (&threads[i].cv, NULL);
+        pthread_create(&threads[i].pthread, &pt_attr, fileIOHelper, (void *)(&threads[i]));
+    }
 
     // create a new socket for the server
     if ((sckfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -215,22 +273,22 @@ int main(int argc, char** argv) {
     if (bind(sckfd, (struct sockaddr *) &srv_addr,
              sizeof(srv_addr)) < 0) {
         cerr << "ERROR on binding" << endl;
+        close(sckfd);
         exit(0);
     }
 
     cout << "bind done" << endl;
 
     // listen for incoming connections, limit to 5
-    if (listen(sckfd,5) < 0) 
-    {
-        cerr<<"failed to listen"<<endl;
-        exit(-1);
-    }
-    else
-    {
-        cout << "listen done" << endl;
-    }
     
+
+    if(listen(sckfd,5) < 0) {
+        cerr << "ERROR on listen" << endl;
+        close(sckfd);
+        exit(0);
+    }
+    cout << "listen done" << endl;
+
     struct pollfd poll_fd[1];
     memset(poll_fd, 0 , sizeof(poll_fd));
     poll_fd[0].fd = sckfd;
@@ -251,7 +309,10 @@ int main(int argc, char** argv) {
 
     cout << "accept done" << endl;
     
-    read_from_fd(newsckfd);
+    char *request = read_from_socket(newsckfd);
+    cout<<request<<endl;
+
+    // TODO: WRITE STUFF OUT TO SOCKET SOMEHOW
 
     // make a threadpool
 

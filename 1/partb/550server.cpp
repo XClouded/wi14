@@ -24,6 +24,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <poll.h>
+#include <map>
 
 using std::cerr;
 using std::cout;
@@ -32,6 +33,7 @@ using std::ifstream;
 using std::istreambuf_iterator;
 using std::string;
 using std::ios;
+using std::map;
 
 extern int errno;
 
@@ -43,7 +45,7 @@ typedef struct ThreadData {
 } ThreadData;
 
 //read file from disk
-char *readFile(std::string abs_file_path) {
+bool readFile(std::string abs_file_path, std::string *file_content) {
     // the pthread file read routine
     //
     int status;
@@ -52,38 +54,39 @@ char *readFile(std::string abs_file_path) {
     status = stat(abs_file_path.c_str(), &st_buf);
     if (status != 0) {
         cerr << "Error finding status of file system object." << endl;
-        //return false;
+        return false;
     }
 
     // test that this file name is actually a file and not a
     // directory
     if (S_ISREG(st_buf.st_mode)) {
     // read the file into a string
-        //ifstream t(abs_file_path.c_str());
-        //string file_str((istreambuf_iterator<char>(t)), 
-        //                istreambuf_iterator<char>());
-        //*file_content = file_str;
-        ifstream ifs(abs_file_path.c_str(), ios::binary|ios::ate);
-        ifstream::pos_type pos = ifs.tellg();
-        char *result = new char[pos];
+        ifstream t(abs_file_path.c_str());
+        string file_str((istreambuf_iterator<char>(t)), 
+                        istreambuf_iterator<char>());
+        *file_content = file_str;
+        //ifstream ifs(abs_file_path.c_str(), ios::binary|ios::ate);
+        //ifstream::pos_type pos = ifs.tellg();
+        //char *result = new char[pos];
 
-        ifs.seekg(0, ios::beg);
-        ifs.read(result, pos);
+        //ifs.seekg(0, ios::beg);
+        //ifs.read(result, pos);
 
-        return result;
-        //return true;
+        //return result;
+        return true;
     } else {
         cerr << "File is not a file but a directory." << endl;
-      //return false;
+      return false;
     }
     return NULL;
 }
 
 //write the given buffer to the file descriptor.
 //Returns the length that is written to the socket.
-int writeToSocket(int fd, char *buf)
+int writeToSocket(int fd, string *buf)
 {
-    int writelen = strlen(buf);
+    //int writelen = strlen(buf);
+    int writelen = buf->size();
     cout<<"len: "<<writelen<<endl;
     int written_so_far = 0;
 
@@ -112,13 +115,39 @@ int writeToSocket(int fd, char *buf)
     return written_so_far;
 }
 
-void read_from_pipe (int file)
+char *read_from_fd (int file)
 {
+    cout<<"in read from fd"<<endl;
     FILE *stream;
-    int c;
     stream = fdopen (file, "r");
+    //fseek(stream, 0, SEEK_END);
+    //long pos = ftell(stream);
+    //fseek(stream, 0, SEEK_SET);
+
+    //char *bytes = (char *)malloc(pos);
+    //fread(bytes, pos, 1, stream);
+    //fclose(stream);
+    //cout<<bytes<<endl;
+    //return bytes;
+
+    int c;
+    int size = 24;
+    char *buf = (char *)malloc(size);
+    char *ptr = buf;
     while ((c = fgetc (stream)) != EOF)
-        putchar (c);
+    {
+        if ((ptr - buf) >= size)
+        {
+            char *new_buf = (char *)malloc(size * 2);
+            memcpy(new_buf, buf, size);
+            free(buf);
+            buf = new_buf;
+            ptr = new_buf + size;
+            size *= 2;
+        }
+        *ptr = c;
+        ptr++;
+    }
     fclose (stream);
 }
 
@@ -127,7 +156,7 @@ void test_on_pipe()
     int pfd[2];
     pipe2(pfd, O_NONBLOCK);
     string str = "hello";
-    write(pfd[1], str.c_str(), 6);
+    write(pfd[1], str.c_str(), str.size());
     struct pollfd poll_fd[1];
     poll_fd[0].fd = pfd[0];
     poll_fd[0].events = POLLIN;
@@ -135,7 +164,7 @@ void test_on_pipe()
     cout<<"rv: "<<rv<<endl;
     //char *c = (char *)malloc(10);
     //read(pfd[0], c, 6);
-    read_from_pipe(pfd[0]);
+    read_from_fd(pfd[0]);
 
 }
 
@@ -144,7 +173,8 @@ int main(int argc, char** argv) {
     struct sockaddr_in srv_addr, cli_addr;
     int sckfd, portno, fcntlflags, newsckfd;
     unsigned int cli_len;
-
+    map <string, string> path_to_file;
+    
     //check for correct # of args
     if (argc != 3) {
         cerr << "Must have exactly 2 arguments." << endl;
@@ -191,9 +221,24 @@ int main(int argc, char** argv) {
     cout << "bind done" << endl;
 
     // listen for incoming connections, limit to 5
-    listen(sckfd,5);
-
-    cout << "listen done" << endl;
+    if (listen(sckfd,5) < 0) 
+    {
+        cerr<<"failed to listen"<<endl;
+        exit(-1);
+    }
+    else
+    {
+        cout << "listen done" << endl;
+    }
+    
+    struct pollfd poll_fd[1];
+    memset(poll_fd, 0 , sizeof(poll_fd));
+    poll_fd[0].fd = sckfd;
+    poll_fd[0].events = POLLIN;
+    int rv = poll(poll_fd, 1, 100000);
+    cout<<"rv: "<<rv<<endl;
+    //char *c = (char *)malloc(10);
+    //read(pfd[0], c, 6);
 
     // accept a new incoming connection
     cli_len = sizeof(cli_addr);
@@ -205,6 +250,8 @@ int main(int argc, char** argv) {
     }
 
     cout << "accept done" << endl;
+    
+    read_from_fd(newsckfd);
 
     // make a threadpool
 
@@ -217,10 +264,18 @@ int main(int argc, char** argv) {
 
     // thread reads requested file
     //TODO replace the abs_path
+    string file_content;
     string abs_path = "/homes/iws/pingyh/550/hw/1/partb/550server.cpp";
-    char *file_content = readFile(abs_path);
+    if(path_to_file.count(abs_path))
+    {
+        file_content = path_to_file[abs_path];
+    }
+    else
+    {
+        readFile(abs_path, &file_content);
+    }
 
-    writeToSocket(sckfd, file_content);
+    //writeToSocket(sckfd, file_content);
     // or ceases execution in the event of read error
     // and is then re-entered into thread pool
 }

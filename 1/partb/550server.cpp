@@ -203,13 +203,38 @@ void test_on_pipe()
 
 }
 
-char *read_from_socket(int socket_fd)
+string read_from_socket(int socket_fd)
 {
     int len = 0;
     ioctl(socket_fd, FIONREAD, &len);
+    cout<<"len: "<<len<<endl;
     char *buf = (char *)malloc(len);
-    len = read(socket_fd, buf, len);
-    return buf;
+    char *ptr = buf;
+    while(len > 0)
+    {
+        int read_size = read(socket_fd, ptr, len);
+        cout<<"read size: "<<read_size<<endl;
+        len -= read_size;
+        ptr += read_size;
+    }
+    string result(buf);
+    cout<<"socket: "<<buf<<endl;
+    return result;
+}
+string get_request_file_name(string req_str)
+{
+    unsigned int begin, end;
+    req_str.find("GET ");
+    begin = req_str.find("GET ");
+
+    if (begin != string::npos)
+        begin += 4;
+    else
+        return NULL;
+
+    end = req_str.find(' ', begin);
+    return req_str.substr(begin, end-begin);
+
 }
 
 int main(int argc, char** argv) {
@@ -309,8 +334,10 @@ int main(int argc, char** argv) {
 
     cout << "accept done" << endl;
     
-    char *request = read_from_socket(newsckfd);
-    cout<<request<<endl;
+    string rqt_str = read_from_socket(newsckfd);
+    cout<<"RQT STR: "<<rqt_str<<endl;
+    string file_name = get_request_file_name(rqt_str);
+    cout<<"file name: "<<file_name<<endl;
 
     // TODO: WRITE STUFF OUT TO SOCKET SOMEHOW
 

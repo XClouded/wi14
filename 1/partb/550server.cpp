@@ -46,7 +46,7 @@ extern int errno;
 
 typedef struct ThreadData {
 	char *fileName;
-    int sock;
+    int pipefd;
     pthread_t pthread;
     pthread_mutex_t mutex;
     pthread_cond_t cv;
@@ -237,13 +237,15 @@ string getRequestedFileName(string req_str)
 int main(int argc, char** argv) {
     struct sigaction act;
     struct sockaddr_in srv_addr, cli_addr;
-    int sckfd, portno, fcntlflags, newsckfd, i;
+    int sckfd, portno, fcntlflags, newsckfd, i, num_fds;
     unsigned int cli_len;
     map <string, string> path_to_file;
     
     ThreadData threads[NUM_PTHREADS];
-    //pthread_t threads[NUM_PTHREADS];
+    int selfpipes[NUM_PTHREADS];
     pthread_attr_t pt_attr;
+
+
 
     //check for correct # of args
     if (argc != 3) {
@@ -260,9 +262,16 @@ int main(int argc, char** argv) {
     pthread_attr_setdetachstate(&pt_attr, PTHREAD_CREATE_JOINABLE);
 
     for(i = 0; i < NUM_PTHREADS; ++i) {
+        // initialize the pthread, mutex, and cv
         pthread_mutex_init(&threads[i].mutex, NULL);
         pthread_cond_init (&threads[i].cv, NULL);
         pthread_create(&threads[i].pthread, &pt_attr, fileIOHelper, (void *)(&threads[i]));
+
+        //create a self-pipe
+        int pfd[2];
+        pipe2(pfd, O_NONBLOCK);
+        selfpipes[i] = pfd[0];
+        threads[i].pipefd = pfd[1];
     }
 
     // create a new socket for the server
@@ -302,8 +311,6 @@ int main(int argc, char** argv) {
     cout << "bind done" << endl;
 
     // listen for incoming connections, limit to 5
-    
-
     if(listen(sckfd,5) < 0) {
         cerr << "ERROR on listen" << endl;
         close(sckfd);
@@ -311,38 +318,56 @@ int main(int argc, char** argv) {
     }
     cout << "listen done" << endl;
 
-    struct pollfd poll_fd[1];
-    memset(poll_fd, 0 , sizeof(poll_fd));
-    poll_fd[0].fd = sckfd;
-    poll_fd[0].events = POLLIN;
-    int rv = poll(poll_fd, 1, POLL_TIMEOUT);
-    if (rv < 0)
-    {
-        cout<<"poll() failed"<<endl;
-        perror("  poll() failed");
-        exit(1);
-    }
-    if (rv == 0)
-    {
-        cout<<"poll() timeout"<<endl;
-        exit(1);
+    // loop, waiting for activity
+    num_fds = 1 + NUM_PTHREADS;
+    while (true) {
+        struct pollfd poll_fd[num_fds];
+        memset(poll_fd, 0 , sizeof(poll_fd));
+        poll_fd[0].fd = sckfd;
+        poll_fd[0].events = POLLIN;
+        for(i=0; i<num_fds; ++i) {
+            poll_fd[i].events = POLLIN;
+        }
+
+        int rv = poll(poll_fd, num_fds, POLL_TIMEOUT);
+        if (rv < 0)
+        {
+            cout<<"poll() failed"<<endl;
+            exit(1);
+        }
+        if (rv == 0)
+        {
+            cout<<"poll() timeout"<<endl;
+            exit(1);
+        }
+
+        for(i=0; i<num_fds; ++i) {
+
+        }
+
+        // accept a new incoming connection
+        cli_len = sizeof(cli_addr);
+        newsckfd = accept(sckfd,
+                    (struct sockaddr *) &cli_addr,
+                    &cli_len);
+        if (newsckfd < 0) {
+            cerr << "Error on connection accept" << endl;
+        }
+
+        cout << "accept done" << endl;
+
+        string req_str = readFromSocket(newsckfd);
+        //char *rqt_str = read_from_fd(newsckfd);
+        //cout<<"RQT STR: "<<rqt_str<<endl;
+        string file_name = getRequestedFileName(req_str);
+
+        // thread reads requested file
+        string relative_path = file_name.insert(0, ".");
+
+        char abs_path[1024];
+        realpath(relative_path.c_str(), abs_path);
     }
 
-    // accept a new incoming connection
-    cli_len = sizeof(cli_addr);
-    newsckfd = accept(sckfd,
-                (struct sockaddr *) &cli_addr,
-                &cli_len);
-    if (newsckfd < 0) {
-        cerr << "Error on connection accept" << endl;
-    }
-
-    cout << "accept done" << endl;
-    
-    string req_str = readFromSocket(newsckfd);
-    //char *rqt_str = read_from_fd(newsckfd);
-    //cout<<"RQT STR: "<<rqt_str<<endl;
-    string file_name = getRequestedFileName(req_str);
     
 
     // TODO: WRITE STUFF OUT TO SOCKET SOMEHOW
@@ -356,12 +381,9 @@ int main(int argc, char** argv) {
     // use condition variables to wake threads-
     // https://computing.llnl.gov/tutorials/pthreads/#ConditionVariables
 
-    // thread reads requested file
-    string relative_path = file_name.insert(0, ".");
 
-    char abs_path[1024];
-    realpath(relative_path.c_str(), abs_path);
     //cout<<"abs path: "<<abs_path<<endl;
+    /*
     string file_content;
     bool read_file_success = true;
     if(path_to_file.count(abs_path))
@@ -371,6 +393,9 @@ int main(int argc, char** argv) {
     else
     {
        read_file_success = readFile(abs_path, &file_content);
+       if(read_file_success) {
+           path_to_file[abs_path] = file_content;
+       }
     }
     if(read_file_success)
     {
@@ -379,6 +404,7 @@ int main(int argc, char** argv) {
         //cout<<"response: "<<response<<endl;
         writeToSocket(newsckfd, &response);
     }
+    */
     // or ceases execution in the event of read error
     // and is then re-entered into thread pool
 }

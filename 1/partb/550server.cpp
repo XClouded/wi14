@@ -6,6 +6,7 @@
 */
 
 #include <cstdlib>
+#include <set>
 #include <iostream> // print
 #include <fstream>  // file input
 #include <pthread.h>// pthreads
@@ -100,6 +101,11 @@ string generateResponse(string body)
     header << "\r\n";
     header << body;
     return header.str();
+}
+
+void closeConnection(int sck_fd, set<int> &open_scks) {
+    open_scks.erase(sck_fd);
+    close(sck_fd);
 }
 
 //write the given buffer to the file descriptor.
@@ -245,7 +251,7 @@ string getRequestedFileName(string req_str)
 }
 
 int main(int argc, char** argv) {
-    set<int> open_socks;
+    set<int> open_scks;
     set<int>::iterator it;
     struct sigaction act;
     struct sockaddr_in srv_addr, cli_addr;
@@ -370,17 +376,22 @@ int main(int argc, char** argv) {
                 exit(0); //don't know what to do!
             }
 
-
+            // activity on the listening socket
             if (poll_fd[i].fd == sckfd) {
                 // this is the listening socket
-                do {
+                while (true) {
                     // accept a new incoming connection
                     cli_len = sizeof(cli_addr);
                     newsckfd = accept(sckfd,
                                 (struct sockaddr *) &cli_addr,
                                 &cli_len);
 
+                    // no more incoming connections
+                    if (newsckfd == -1) break;
+
                     cout << "accept done" << endl;
+
+                    open_scks.insert(newsckfd);
 
                     string req_str = readFromSocket(newsckfd);
                     string file_name = getRequestedFileName(req_str);
@@ -393,7 +404,7 @@ int main(int argc, char** argv) {
                     string abs_path_str(abs_path);
 
 
-                } while (newsckfd != -1);
+                }
             }
         }
     }
@@ -446,7 +457,7 @@ int main(int argc, char** argv) {
     }
 
     // close any open connections
-    for (it = open_socks.begin(); it!=myset.end(); ++it) {
+    for (it = open_scks.begin(); it!=open_scks.end(); ++it) {
         close(*it);
     }
 

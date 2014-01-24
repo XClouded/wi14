@@ -81,7 +81,7 @@ bool readFile(char *abs_file_path, std::string *file_content) {
         return true;
     } else {
         cerr << "File is not a file but a directory." << endl;
-      return false;
+        return false;
     }
     return NULL;
 }
@@ -377,6 +377,7 @@ int main(int argc, char** argv) {
 
                 char abs_path[1024];
                 realpath(relative_path.c_str(), abs_path);
+                string abs_path_str(abs_path);
             }
         }
     }

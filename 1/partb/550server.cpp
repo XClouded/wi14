@@ -54,13 +54,13 @@ typedef struct ThreadData {
 } ThreadData;
 
 //read file from disk
-bool readFile(std::string abs_file_path, std::string *file_content) {
+bool readFile(char *abs_file_path, std::string *file_content) {
     // the pthread file read routine
     //
     int status;
     struct stat st_buf;
 
-    status = stat(abs_file_path.c_str(), &st_buf);
+    status = stat(abs_file_path, &st_buf);
     if (status != 0) {
         cerr << "Error finding status of file system object." << endl;
         return false;
@@ -70,18 +70,10 @@ bool readFile(std::string abs_file_path, std::string *file_content) {
     // directory
     if (S_ISREG(st_buf.st_mode)) {
     // read the file into a string
-        ifstream t(abs_file_path.c_str());
+        ifstream t(abs_file_path);
         string file_str((istreambuf_iterator<char>(t)), 
                         istreambuf_iterator<char>());
         *file_content = file_str;
-        //ifstream ifs(abs_file_path.c_str(), ios::binary|ios::ate);
-        //ifstream::pos_type pos = ifs.tellg();
-        //char *result = new char[pos];
-
-        //ifs.seekg(0, ios::beg);
-        //ifs.read(result, pos);
-
-        //return result;
         return true;
     } else {
         cerr << "File is not a file but a directory." << endl;
@@ -90,13 +82,28 @@ bool readFile(std::string abs_file_path, std::string *file_content) {
     return NULL;
 }
 
+string generateResponse(string body)
+{
+    std::stringstream header;
+    int response_code = 200;
+    string message("OK");
+    header << "HTTP/1.1 " << response_code << " " << message << "\r\n";
+    //for (it = headers.begin(); it != headers.end(); it++) {
+    //      header << it->first << ": " << it->second << "\r\n";
+    //    }
+    header << "Content-length: " << body.size() << "\r\n";
+    header << "\r\n";
+    header << body;
+    return header.str();
+}
+
 //write the given buffer to the file descriptor.
 //Returns the length that is written to the socket.
-int writeToSocket(int fd, string *buf)
+int writeToSocket(int fd, string *str)
 {
-    //int writelen = strlen(buf);
-    int writelen = buf->size();
-    cout<<"len: "<<writelen<<endl;
+    //int writelen = strlen(str);
+    int writelen = str->size();
+    const char *buf = str->c_str();
     int written_so_far = 0;
 
     while (written_so_far < writelen) 
@@ -188,18 +195,30 @@ void* fileIOHelper(void* args) {
     return args;
 }
 
-string read_from_socket(int socket_fd)
+string readFromSocket(int socket_fd)
 {
     int size = 1024;
     char *buf = (char *)malloc(size);
     int rc = recv(socket_fd, buf, size, 0);
-    cout<<"rc: "<<rc<<endl;
-    cout<<buf<<endl;
+    if (rc < 0)
+    {
+        if (errno != EWOULDBLOCK)
+        {
+            perror("  recv() failed");
+        }
+    }
+
+    if (rc == 0)
+    {
+        printf("  Connection closed\n");
+    }
+    //cout<<"rc: "<<rc<<endl;
+    //cout<<buf<<endl;
     string result(buf);
     return result;
 }
 
-string get_request_file_name(string req_str)
+string getRequestedFileName(string req_str)
 {
     unsigned int begin, end;
     req_str.find("GET ");
@@ -320,11 +339,11 @@ int main(int argc, char** argv) {
 
     cout << "accept done" << endl;
     
-    string req_str = read_from_socket(newsckfd);
+    string req_str = readFromSocket(newsckfd);
     //char *rqt_str = read_from_fd(newsckfd);
     //cout<<"RQT STR: "<<rqt_str<<endl;
-    string file_name = get_request_file_name(req_str);
-    //cout<<"file name: "<<file_name<<endl;
+    string file_name = getRequestedFileName(req_str);
+    
 
     // TODO: WRITE STUFF OUT TO SOCKET SOMEHOW
 
@@ -338,20 +357,28 @@ int main(int argc, char** argv) {
     // https://computing.llnl.gov/tutorials/pthreads/#ConditionVariables
 
     // thread reads requested file
-    string file_content;
-    string abs_path = file_name.insert(0, ".");
+    string relative_path = file_name.insert(0, ".");
+
+    char abs_path[1024];
+    realpath(relative_path.c_str(), abs_path);
     //cout<<"abs path: "<<abs_path<<endl;
-    //string abs_path = "/homes/iws/pingyh/550/hw/1/partb/550server.cpp";
+    string file_content;
+    bool read_file_success = true;
     if(path_to_file.count(abs_path))
     {
         file_content = path_to_file[abs_path];
     }
     else
     {
-        readFile(abs_path, &file_content);
+       read_file_success = readFile(abs_path, &file_content);
     }
-
-    writeToSocket(newsckfd, &file_content);
+    if(read_file_success)
+    {
+        //cout<<"file_content: "<<file_content<<endl;
+        string response = generateResponse(file_content);
+        //cout<<"response: "<<response<<endl;
+        writeToSocket(newsckfd, &response);
+    }
     // or ceases execution in the event of read error
     // and is then re-entered into thread pool
 }

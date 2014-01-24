@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <poll.h>
 #include <map>
+#include <set>
 
 #define BUSY 0
 #define NOT_BUSY 1
@@ -209,6 +210,11 @@ string readFromSocket(int socket_fd)
     int size = 1024;
     char *buf = (char *)malloc(size);
     int rc = recv(socket_fd, buf, size, 0);
+    char *nl= strstr(buf, "\n");
+    if(nl == NULL){
+        return NULL;
+    }
+    *nl = '\0';
     if (rc < 0)
     {
         if (errno != EWOULDBLOCK)
@@ -231,7 +237,6 @@ string readFromSocket(int socket_fd)
 string getRequestedFileName(string req_str)
 {
     unsigned int begin, end;
-    req_str.find("GET ");
     begin = req_str.find("GET ");
 
     if (begin != string::npos)
@@ -383,14 +388,42 @@ int main(int argc, char** argv) {
                     cout << "accept done" << endl;
 
                     string req_str = readFromSocket(newsckfd);
-                    string file_name = getRequestedFileName(req_str);
+                    //string file_name = getRequestedFileName(req_str);
 
                     // thread reads requested file
-                    string relative_path = file_name.insert(0, ".");
+                    //string relative_path = file_name.insert(0, ".");
 
+                    string file_content;
                     char abs_path[1024];
-                    realpath(relative_path.c_str(), abs_path);
-                    string abs_path_str(abs_path);
+                    //realpath(relative_path.c_str(), abs_path);
+                    char *path = realpath(req_str, abs_path);
+                    if(path_to_file.count(abs_path))
+                    {
+                        file_content = path_to_file[abs_path];
+                    }
+                    else
+                    {
+                        if (path == NULL)
+                        {
+                            //file not found, close connection
+                            //
+                        }
+                        else
+                        {
+                            string abs_path_str(abs_path);
+
+                            if(readFile(abs_path, &file_content))
+                            {
+                                //file not found, close connection
+                                //
+                            }
+                            path_to_file[abs_path] = file_content;
+                        }
+                    }
+                    //cout<<"file_content: "<<file_content<<endl;
+                    //string response = generateResponse(file_content);
+                    //cout<<"response: "<<response<<endl;
+                    writeToSocket(newsckfd, string);
 
 
                 } while (newsckfd != -1);
@@ -404,26 +437,6 @@ int main(int argc, char** argv) {
 
     //cout<<"abs path: "<<abs_path<<endl;
     /*
-    string file_content;
-    bool read_file_success = true;
-    if(path_to_file.count(abs_path))
-    {
-        file_content = path_to_file[abs_path];
-    }
-    else
-    {
-       read_file_success = readFile(abs_path, &file_content);
-       if(read_file_success) {
-           path_to_file[abs_path] = file_content;
-       }
-    }
-    if(read_file_success)
-    {
-        //cout<<"file_content: "<<file_content<<endl;
-        string response = generateResponse(file_content);
-        //cout<<"response: "<<response<<endl;
-        writeToSocket(newsckfd, &response);
-    }
     */
 
     cleanup:

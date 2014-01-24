@@ -34,6 +34,7 @@
 
 #define NUM_PTHREADS 5
 #define POLL_TIMEOUT 1000 * 60 * 60 * 24
+#define BUFFER_SIZE 1024
 
 using std::cerr;
 using std::cout;
@@ -61,13 +62,13 @@ typedef struct ThreadData {
 map <string, string> path_to_file;
 
 //read file from disk
-bool readFile(char *abs_file_path, std::string *file_content) {
+bool readFile(string abs_file_path, std::string *file_content) {
     // the pthread file read routine
     //
     int status;
     struct stat st_buf;
 
-    status = stat(abs_file_path, &st_buf);
+    status = stat(abs_file_path.c_str(), &st_buf);
     if (status != 0) {
         cerr << "Error finding status of file system object." << endl;
         return false;
@@ -77,7 +78,7 @@ bool readFile(char *abs_file_path, std::string *file_content) {
     // directory
     if (S_ISREG(st_buf.st_mode)) {
     // read the file into a string
-        ifstream t(abs_file_path);
+        ifstream t(abs_file_path.c_str());
         string file_str((istreambuf_iterator<char>(t)), 
                         istreambuf_iterator<char>());
         *file_content = file_str;
@@ -213,13 +214,13 @@ void* fileIOHelper(void* args) {
 
 string readFromSocket(int socket_fd)
 {
-    int size = 1024;
-    char *buf = (char *)malloc(size);
-    int rc = recv(socket_fd, buf, size, 0);
+    char *buf = (char *)malloc(BUFFER_SIZE);
+    int rc = recv(socket_fd, buf, BUFFER_SIZE, 0);
     char *nl= strstr(buf, "\n");
-    if(nl == NULL){
+    if(nl == NULL)
         return NULL;
-    }
+    if( *(nl - 1) == '\r')
+        nl --;
     *nl = '\0';
     if (rc < 0)
     {
@@ -399,43 +400,35 @@ int main(int argc, char** argv) {
                     open_scks.insert(newsckfd);
 
                     string req_str = readFromSocket(newsckfd);
-                    //string file_name = getRequestedFileName(req_str);
-
-                    // thread reads requested file
-                    //string relative_path = file_name.insert(0, ".");
-
                     string file_content;
-                    char abs_path[1024];
-                    //realpath(relative_path.c_str(), abs_path);
-                    char *path = realpath(req_str, abs_path);
+                    char abs_path[BUFFER_SIZE];
+                    realpath(req_str.c_str(), abs_path);
+                    
+                    if (abs_path == 0)
+                    {
+                        //file not found, close connection
+                        //
+                        exit(-1);
+                    }
                     if(path_to_file.count(abs_path))
                     {
                         file_content = path_to_file[abs_path];
                     }
                     else
                     {
-                        if (path == NULL)
+                        string ap(abs_path);
+                        if(!readFile(ap, &file_content))
                         {
                             //file not found, close connection
                             //
-                        }
-                        else
-                        {
-                            string abs_path_str(abs_path);
-
-                            if(readFile(abs_path, &file_content))
-                            {
-                                //file not found, close connection
-                                //
-                            }
-                            path_to_file[abs_path] = file_content;
+                            exit(-1);
                         }
                     }
                     //cout<<"file_content: "<<file_content<<endl;
                     //string response = generateResponse(file_content);
                     //cout<<"response: "<<response<<endl;
-                    writeToSocket(newsckfd, string);
-
+                    cout<<file_content<<endl;
+                    writeToSocket(newsckfd, &file_content);
 
                 }
             }

@@ -31,6 +31,7 @@
 #define NOT_BUSY 1
 
 #define NUM_PTHREADS 5
+#define POLL_TIMEOUT 1000 * 60 * 60 * 24
 
 using std::cerr;
 using std::cout;
@@ -125,6 +126,7 @@ int writeToSocket(int fd, string *buf)
 
 char *read_from_fd (int fd)
 {
+    cout<<"read from fd"<<endl;
     FILE *stream;
     stream = fdopen (fd, "r");
     //fseek(stream, 0, SEEK_END);
@@ -186,41 +188,17 @@ void* fileIOHelper(void* args) {
     return args;
 }
 
-void test_on_pipe()
-{
-    int pfd[2];
-    pipe2(pfd, O_NONBLOCK);
-    string str = "hello";
-    write(pfd[1], str.c_str(), str.size());
-    struct pollfd poll_fd[1];
-    poll_fd[0].fd = pfd[0];
-    poll_fd[0].events = POLLIN;
-    int rv = poll(poll_fd, 1, 1000);
-    cout<<"rv: "<<rv<<endl;
-    //char *c = (char *)malloc(10);
-    //read(pfd[0], c, 6);
-    read_from_fd(pfd[0]);
-
-}
-
 string read_from_socket(int socket_fd)
 {
-    int len = 0;
-    ioctl(socket_fd, FIONREAD, &len);
-    cout<<"len: "<<len<<endl;
-    char *buf = (char *)malloc(len);
-    char *ptr = buf;
-    while(len > 0)
-    {
-        int read_size = read(socket_fd, ptr, len);
-        cout<<"read size: "<<read_size<<endl;
-        len -= read_size;
-        ptr += read_size;
-    }
+    int size = 1024;
+    char *buf = (char *)malloc(size);
+    int rc = recv(socket_fd, buf, size, 0);
+    cout<<"rc: "<<rc<<endl;
+    cout<<buf<<endl;
     string result(buf);
-    cout<<"socket: "<<buf<<endl;
     return result;
 }
+
 string get_request_file_name(string req_str)
 {
     unsigned int begin, end;
@@ -318,10 +296,18 @@ int main(int argc, char** argv) {
     memset(poll_fd, 0 , sizeof(poll_fd));
     poll_fd[0].fd = sckfd;
     poll_fd[0].events = POLLIN;
-    int rv = poll(poll_fd, 1, 100000);
-    cout<<"rv: "<<rv<<endl;
-    //char *c = (char *)malloc(10);
-    //read(pfd[0], c, 6);
+    int rv = poll(poll_fd, 1, POLL_TIMEOUT);
+    if (rv < 0)
+    {
+        cout<<"poll() failed"<<endl;
+        perror("  poll() failed");
+        exit(1);
+    }
+    if (rv == 0)
+    {
+        cout<<"poll() timeout"<<endl;
+        exit(1);
+    }
 
     // accept a new incoming connection
     cli_len = sizeof(cli_addr);
@@ -334,10 +320,11 @@ int main(int argc, char** argv) {
 
     cout << "accept done" << endl;
     
-    string rqt_str = read_from_socket(newsckfd);
-    cout<<"RQT STR: "<<rqt_str<<endl;
-    string file_name = get_request_file_name(rqt_str);
-    cout<<"file name: "<<file_name<<endl;
+    string req_str = read_from_socket(newsckfd);
+    //char *rqt_str = read_from_fd(newsckfd);
+    //cout<<"RQT STR: "<<rqt_str<<endl;
+    string file_name = get_request_file_name(req_str);
+    //cout<<"file name: "<<file_name<<endl;
 
     // TODO: WRITE STUFF OUT TO SOCKET SOMEHOW
 
@@ -351,9 +338,10 @@ int main(int argc, char** argv) {
     // https://computing.llnl.gov/tutorials/pthreads/#ConditionVariables
 
     // thread reads requested file
-    //TODO replace the abs_path
     string file_content;
-    string abs_path = "/homes/iws/pingyh/550/hw/1/partb/550server.cpp";
+    string abs_path = file_name.insert(0, ".");
+    //cout<<"abs path: "<<abs_path<<endl;
+    //string abs_path = "/homes/iws/pingyh/550/hw/1/partb/550server.cpp";
     if(path_to_file.count(abs_path))
     {
         file_content = path_to_file[abs_path];
@@ -363,7 +351,7 @@ int main(int argc, char** argv) {
         readFile(abs_path, &file_content);
     }
 
-    //writeToSocket(sckfd, file_content);
+    writeToSocket(newsckfd, &file_content);
     // or ceases execution in the event of read error
     // and is then re-entered into thread pool
 }

@@ -41,6 +41,7 @@ using std::istreambuf_iterator;
 using std::string;
 using std::ios;
 using std::map;
+using std::set;
 
 extern int errno;
 
@@ -220,9 +221,10 @@ string readFromSocket(int socket_fd)
     {
         printf("  Connection closed\n");
     }
-    //cout<<"rc: "<<rc<<endl;
-    //cout<<buf<<endl;
+
     string result(buf);
+
+    free(buf);
     return result;
 }
 
@@ -243,6 +245,8 @@ string getRequestedFileName(string req_str)
 }
 
 int main(int argc, char** argv) {
+    set<int> open_socks;
+    set<int>::iterator it;
     struct sigaction act;
     struct sockaddr_in srv_addr, cli_addr;
     int sckfd = NULL, portno, fcntlflags, newsckfd, i, num_fds;
@@ -424,11 +428,13 @@ int main(int argc, char** argv) {
 
     cleanup:
 
+    // clean up the listening socket
     if (sckfd != NULL) {
         close(sckfd);
         sckfd = NULL;
     }
 
+    // clean up the pthreads
     for(i = 0; i < NUM_PTHREADS; ++i) {
         pthread_mutex_lock(&threads[i].mutex);
         threads[i].kill = true;
@@ -437,6 +443,11 @@ int main(int argc, char** argv) {
         pthread_join(threads[i].pthread, NULL);
         pthread_mutex_destroy(&threads[i].mutex);
         pthread_cond_destroy(&threads[i].cv);
+    }
+
+    // close any open connections
+    for (it = open_socks.begin(); it!=myset.end(); ++it) {
+        close(*it);
     }
 
     pthread_attr_destroy(&pt_attr);

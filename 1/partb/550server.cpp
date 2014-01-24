@@ -31,6 +31,9 @@
 #define BUSY 0
 #define NOT_BUSY 1
 
+#define READ_SUCCESS 1
+#define READ_FAILURE 0
+
 #define NUM_PTHREADS 5
 #define POLL_TIMEOUT 1000 * 60 * 60 * 24
 
@@ -47,8 +50,9 @@ using std::set;
 extern int errno;
 
 typedef struct ThreadData {
-    std::string fileName;
+    std::string file_path;
     int pipefd;
+    int client_sck;
     pthread_t pthread;
     pthread_mutex_t mutex;
     pthread_cond_t cv;
@@ -60,7 +64,7 @@ typedef struct ThreadData {
 map <string, string> path_to_file;
 
 //read file from disk
-bool readFile(char *abs_file_path, std::string *file_content) {
+bool readFile(const char *abs_file_path, std::string *file_content) {
     // the pthread file read routine
     //
     int status;
@@ -142,6 +146,27 @@ int writeToSocket(int fd, string *str)
     return written_so_far;
 }
 
+char readByteFromPipe (int pipe_fd) {
+    FILE *stream;
+    int returned, c;
+    stream = fdopen (pipe_fd, "r");
+    cout<<"read from pipe"<<endl;
+
+    returned = fgetc(stream);
+    if (returned == EOF) {
+        cerr << "ERROR readByteFromPipe: premature EOF" << endl;
+    }
+
+    c = fgetc(stream);
+    if(c != EOF) {
+        cerr << "ERROR readByteFromPipe: more than 1 byte in pipe" << endl;
+    }
+
+    fclose (stream);
+    cout << "readByteFromPipe: read = " << returned << endl;
+    return returned;
+}
+
 char *read_from_fd (int fd)
 {
     cout<<"read from fd"<<endl;
@@ -183,7 +208,9 @@ char *read_from_fd (int fd)
 
 // the worker function for the pthreads
 void* fileIOHelper(void* args) {
+    string file_content;
     ThreadData* td = (ThreadData*)args;
+    int result[1];
 
     // lock the mutex for this thread
     pthread_mutex_lock(&td->mutex);
@@ -197,11 +224,28 @@ void* fileIOHelper(void* args) {
         // if the thread should stop, break
         if (td->kill) break;
 
+        bool read_file_success = true;
+        if(path_to_file.count(td->file_path))
+        {
+            file_content = path_to_file[td->file_path];
+        }
+        else
+        {
+            read_file_success = readFile(td->file_path.c_str(), &file_content);
+           if(read_file_success) {
+               path_to_file[td->file_path] = file_content;
+           }
+        }
+        if(read_file_success)
+        {
+            result[0] = READ_SUCCESS;
+        }
+        else
+        {
+            result[0] = READ_FAILURE;
+        }
 
-        // READ FILE GOES HERE
-        // GOTTA HAVE THE FILE CACHE READY
-
-        // POKE THE PIPE HERE
+        write(td->pipefd, result, 1);
     }
 
     pthread_mutex_unlock(&td->mutex);
@@ -247,7 +291,6 @@ string getRequestedFileName(string req_str)
 
     end = req_str.find(' ', begin);
     return req_str.substr(begin, end-begin);
-
 }
 
 int main(int argc, char** argv) {
@@ -291,13 +334,14 @@ int main(int argc, char** argv) {
         selfpipes[i] = pfd[0];
         threads[i].pipefd = pfd[1];
         threads[i].kill = false;
+        threads[i].client_sck = 0;
     }
 
     // create a new socket for the server
     if ((sckfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         cerr << "cannot create socket" << endl;
-
-        exit(0);
+        exit_val = EXIT_FAILURE;
+        goto cleanup;
     }
 
     // ignore SIGPIPE
@@ -323,8 +367,8 @@ int main(int argc, char** argv) {
     if (bind(sckfd, (struct sockaddr *) &srv_addr,
              sizeof(srv_addr)) < 0) {
         cerr << "ERROR on binding" << endl;
-        close(sckfd);
-        exit(0);
+        exit_val = EXIT_FAILURE;
+        goto cleanup;
     }
 
     cout << "bind done" << endl;
@@ -332,8 +376,8 @@ int main(int argc, char** argv) {
     // listen for incoming connections, limit to 5
     if(listen(sckfd,5) < 0) {
         cerr << "ERROR on listen" << endl;
-        close(sckfd);
-        exit(0);
+        exit_val = EXIT_FAILURE;
+        goto cleanup;
     }
     cout << "listen done" << endl;
 
@@ -403,39 +447,39 @@ int main(int argc, char** argv) {
                     realpath(relative_path.c_str(), abs_path);
                     string abs_path_str(abs_path);
 
-
+                    // find an idle thread
+                    bool threadDirpatched = false;
+                    int itr = 0;
+                    while (true) {
+                        // loop waiting for a free thread
+                        int index = itr % NUM_PTHREADS;
+                        pthread_mutex_lock(&threads[index].mutex);
+                        if (threads[index].status == NOT_BUSY) {
+                            // if the thread is not busy, tell it to get to work!
+                            threads[index].file_path = abs_path_str;
+                            pthread_cond_signal(&threads[index].cv);
+                            threadDirpatched = true;
+                        }
+                        pthread_mutex_unlock(&threads[index].mutex);
+                        itr++;
+                    }
                 }
+            } else {
+                // this is a thread pipe
+
+                // get the result of the file read
+                char result = readByteFromPipe(selfpipes[i-1]);
+                if (result == READ_SUCCESS) {
+                    // write the file back out the socket
+                    writeToSocket(threads[i-1].client_sck, &path_to_file[threads[i-1].file_path]);
+                }
+
+                // close the connection
+                closeConnection(threads[i-1].client_sck, open_scks);
+                threads[i-1].client_sck = 0;
             }
         }
     }
-
-    // use condition variables to wake threads-
-    // https://computing.llnl.gov/tutorials/pthreads/#ConditionVariables
-
-
-    //cout<<"abs path: "<<abs_path<<endl;
-    /*
-    string file_content;
-    bool read_file_success = true;
-    if(path_to_file.count(abs_path))
-    {
-        file_content = path_to_file[abs_path];
-    }
-    else
-    {
-       read_file_success = readFile(abs_path, &file_content);
-       if(read_file_success) {
-           path_to_file[abs_path] = file_content;
-       }
-    }
-    if(read_file_success)
-    {
-        //cout<<"file_content: "<<file_content<<endl;
-        string response = generateResponse(file_content);
-        //cout<<"response: "<<response<<endl;
-        writeToSocket(newsckfd, &response);
-    }
-    */
 
     cleanup:
 

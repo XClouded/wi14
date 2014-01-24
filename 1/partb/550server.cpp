@@ -51,7 +51,11 @@ typedef struct ThreadData {
     pthread_mutex_t mutex;
     pthread_cond_t cv;
     int status;
+    int threadid;
 } ThreadData;
+
+// globally used
+map <string, string> path_to_file;
 
 //read file from disk
 bool readFile(char *abs_file_path, std::string *file_content) {
@@ -239,13 +243,10 @@ int main(int argc, char** argv) {
     struct sockaddr_in srv_addr, cli_addr;
     int sckfd, portno, fcntlflags, newsckfd, i, num_fds;
     unsigned int cli_len;
-    map <string, string> path_to_file;
     
     ThreadData threads[NUM_PTHREADS];
     int selfpipes[NUM_PTHREADS];
     pthread_attr_t pt_attr;
-
-
 
     //check for correct # of args
     if (argc != 3) {
@@ -341,42 +342,44 @@ int main(int argc, char** argv) {
             exit(1);
         }
 
+        // poll() returned with an event
         for(i=0; i<num_fds; ++i) {
+            // no activity on the FD
+            if (poll_fd[i].revents == 0) {
+                continue;
+            }
 
+            // unknown event on the FD
+            if (poll_fd[i].revents != POLLIN) {
+                cerr << "ERROR revents = " << poll_fd[i].revents << endl;
+                exit(0); //don't know what to do!
+            }
+
+
+            if (poll_fd[i].fd == sckfd) {
+                // this is the listening socket
+                // accept a new incoming connection
+                cli_len = sizeof(cli_addr);
+                newsckfd = accept(sckfd,
+                            (struct sockaddr *) &cli_addr,
+                            &cli_len);
+                if (newsckfd < 0) {
+                    cerr << "Error on connection accept" << endl;
+                }
+
+                cout << "accept done" << endl;
+
+                string req_str = readFromSocket(newsckfd);
+                string file_name = getRequestedFileName(req_str);
+
+                // thread reads requested file
+                string relative_path = file_name.insert(0, ".");
+
+                char abs_path[1024];
+                realpath(relative_path.c_str(), abs_path);
+            }
         }
-
-        // accept a new incoming connection
-        cli_len = sizeof(cli_addr);
-        newsckfd = accept(sckfd,
-                    (struct sockaddr *) &cli_addr,
-                    &cli_len);
-        if (newsckfd < 0) {
-            cerr << "Error on connection accept" << endl;
-        }
-
-        cout << "accept done" << endl;
-
-        string req_str = readFromSocket(newsckfd);
-        //char *rqt_str = read_from_fd(newsckfd);
-        //cout<<"RQT STR: "<<rqt_str<<endl;
-        string file_name = getRequestedFileName(req_str);
-
-        // thread reads requested file
-        string relative_path = file_name.insert(0, ".");
-
-        char abs_path[1024];
-        realpath(relative_path.c_str(), abs_path);
     }
-
-    
-
-    // TODO: WRITE STUFF OUT TO SOCKET SOMEHOW
-
-    // make a threadpool
-
-    // open socket to listen
-
-    // while loop catching incoming connections
 
     // use condition variables to wake threads-
     // https://computing.llnl.gov/tutorials/pthreads/#ConditionVariables

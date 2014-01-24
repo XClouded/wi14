@@ -45,13 +45,13 @@ using std::map;
 extern int errno;
 
 typedef struct ThreadData {
-	char *fileName;
+    std::string fileName;
     int pipefd;
     pthread_t pthread;
     pthread_mutex_t mutex;
     pthread_cond_t cv;
     int status;
-    int threadid;
+    bool kill;
 } ThreadData;
 
 // globally used
@@ -187,6 +187,10 @@ void* fileIOHelper(void* args) {
         pthread_cond_wait(&td->cv, &td->mutex);
         td->status = BUSY;
 
+        // if the thread should stop, break
+        if (td->kill) break;
+
+
         // READ FILE GOES HERE
         // GOTTA HAVE THE FILE CACHE READY
 
@@ -195,7 +199,7 @@ void* fileIOHelper(void* args) {
 
     pthread_mutex_unlock(&td->mutex);
 
-    // never gonna get here, but keeps the compiler happy
+    pthread_exit(NULL);
     return args;
 }
 
@@ -241,12 +245,14 @@ string getRequestedFileName(string req_str)
 int main(int argc, char** argv) {
     struct sigaction act;
     struct sockaddr_in srv_addr, cli_addr;
-    int sckfd, portno, fcntlflags, newsckfd, i, num_fds;
+    int sckfd = NULL, portno, fcntlflags, newsckfd, i, num_fds;
     unsigned int cli_len;
     
     ThreadData threads[NUM_PTHREADS];
     int selfpipes[NUM_PTHREADS];
     pthread_attr_t pt_attr;
+
+    int exit_val = EXIT_SUCCESS;
 
     //check for correct # of args
     if (argc != 3) {
@@ -255,7 +261,8 @@ int main(int argc, char** argv) {
         cerr << argv[0] << " <ipv4 address of server> <listening port>" << endl;
         cerr << "ex: " << argv[0] <<  " 127.0.0.1 9000" << endl;
 
-		exit(0);
+        exit_val = EXIT_FAILURE;
+        goto cleanup;
 	}
 
     // initialize the pthreads
@@ -273,6 +280,7 @@ int main(int argc, char** argv) {
         pipe2(pfd, O_NONBLOCK);
         selfpipes[i] = pfd[0];
         threads[i].pipefd = pfd[1];
+        threads[i].kill = false;
     }
 
     // create a new socket for the server
@@ -334,12 +342,15 @@ int main(int argc, char** argv) {
         if (rv < 0)
         {
             cout<<"poll() failed"<<endl;
-            exit(1);
+            close(sckfd);
+            exit(0);
         }
+
         if (rv == 0)
         {
             cout<<"poll() timeout"<<endl;
-            exit(1);
+            close(sckfd);
+            exit(0);
         }
 
         // poll() returned with an event
@@ -358,26 +369,27 @@ int main(int argc, char** argv) {
 
             if (poll_fd[i].fd == sckfd) {
                 // this is the listening socket
-                // accept a new incoming connection
-                cli_len = sizeof(cli_addr);
-                newsckfd = accept(sckfd,
-                            (struct sockaddr *) &cli_addr,
-                            &cli_len);
-                if (newsckfd < 0) {
-                    cerr << "Error on connection accept" << endl;
-                }
+                do {
+                    // accept a new incoming connection
+                    cli_len = sizeof(cli_addr);
+                    newsckfd = accept(sckfd,
+                                (struct sockaddr *) &cli_addr,
+                                &cli_len);
 
-                cout << "accept done" << endl;
+                    cout << "accept done" << endl;
 
-                string req_str = readFromSocket(newsckfd);
-                string file_name = getRequestedFileName(req_str);
+                    string req_str = readFromSocket(newsckfd);
+                    string file_name = getRequestedFileName(req_str);
 
-                // thread reads requested file
-                string relative_path = file_name.insert(0, ".");
+                    // thread reads requested file
+                    string relative_path = file_name.insert(0, ".");
 
-                char abs_path[1024];
-                realpath(relative_path.c_str(), abs_path);
-                string abs_path_str(abs_path);
+                    char abs_path[1024];
+                    realpath(relative_path.c_str(), abs_path);
+                    string abs_path_str(abs_path);
+
+
+                } while (newsckfd != -1);
             }
         }
     }
@@ -409,6 +421,27 @@ int main(int argc, char** argv) {
         writeToSocket(newsckfd, &response);
     }
     */
-    // or ceases execution in the event of read error
-    // and is then re-entered into thread pool
+
+    cleanup:
+
+    if (sckfd != NULL) {
+        close(sckfd);
+        sckfd = NULL;
+    }
+
+    for(i = 0; i < NUM_PTHREADS; ++i) {
+        pthread_mutex_lock(&threads[i].mutex);
+        threads[i].kill = true;
+        pthread_cond_signal(&threads[i].cv);
+        pthread_mutex_unlock(&threads[i].mutex);
+        pthread_join(threads[i].pthread, NULL);
+        pthread_mutex_destroy(&threads[i].mutex);
+        pthread_cond_destroy(&threads[i].cv);
+    }
+
+    pthread_attr_destroy(&pt_attr);
+
+    pthread_exit(NULL);
+
+    return exit_val;
 }

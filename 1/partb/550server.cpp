@@ -210,6 +210,7 @@ char *read_from_fd (int fd)
 
 // the worker function for the pthreads
 void* fileIOHelper(void* args) {
+    cout<<"in file IO"<<endl;
     string file_content;
     ThreadData* td = (ThreadData*)args;
     int result[1];
@@ -445,14 +446,22 @@ int main(int argc, char** argv) {
 
                     string req_str = readFromSocket(newsckfd);
 
-                    string file_name = getRequestedFileName(req_str);
+                    //string file_name = getRequestedFileName(req_str);
 
                     // thread reads requested file
-                    string relative_path = file_name.insert(0, ".");
+                    //string relative_path = file_name.insert(0, ".");
 
-                    char abs_path[1024];
-                    realpath(relative_path.c_str(), abs_path);
+                    char abs_path[BUFFER_SIZE];
+                    realpath(req_str.c_str(), abs_path);
+                    
+                    if (abs_path == 0)
+                    {
+                        //TODO 
+                        //file can't find real path
+                        //close connection
+                    }
                     string abs_path_str(abs_path);
+                    cout<<"abs path: "<<abs_path<<endl;
 
                     // find an idle thread
                     bool threadDispatched = false;

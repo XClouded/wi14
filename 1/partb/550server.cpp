@@ -165,22 +165,19 @@ int writeToSocket(int fd, string *str)
 }
 
 char readByteFromPipe (int pipe_fd) {
-    FILE *stream;
-    int returned, c;
-    stream = fdopen (pipe_fd, "r");
+    int returned = 0, c = 0;
     cout<<"read from pipe"<<endl;
 
-    returned = fgetc(stream);
+    //returned = fgetc(stream);
+    read(pipe_fd, &returned, 1);
     if (returned == EOF) {
         cerr << "ERROR readByteFromPipe: premature EOF" << endl;
     }
 
-    c = fgetc(stream);
-    if(c != EOF) {
-        cerr << "ERROR readByteFromPipe: more than 1 byte in pipe" << endl;
+    if (read(pipe_fd, &c, 1) == -1 && errno != EAGAIN) {
+        cerr << "ERROR extra bytes in pipe" << endl;
     }
 
-    fclose (stream);
     cout << "readByteFromPipe: read = " << returned << endl;
     return returned;
 }
@@ -480,11 +477,12 @@ int main(int argc, char** argv) {
             }
 
             // unknown event on the FD
+            /*
             if (!(poll_fd[i].revents & POLLIN)) {
                 cerr << "ERROR revents = " << poll_fd[i].revents << endl;
                 exit_val = EXIT_FAILURE;
                 goto cleanup;
-            }
+            }*/
 
             // activity on the listening socket
             if (poll_fd[i].fd == sckfd) {
@@ -544,7 +542,7 @@ int main(int argc, char** argv) {
 
                     cout << "incoming connection accepted" << endl;
                 }
-            } else {
+            } else if (poll_fd[i].revents == POLLIN) {
                 // this is a thread pipe
 
                 // get the result of the file read

@@ -94,6 +94,16 @@ bool readFile(string abs_file_path, std::string *file_content) {
     return NULL;
 }
 
+void killThread(ThreadData &td) {
+    pthread_mutex_lock(&td.mutex);
+    td.kill = true;
+    pthread_cond_signal(&td.cv);
+    pthread_mutex_unlock(&td.mutex);
+    pthread_join(td.pthread, NULL);
+    pthread_mutex_destroy(&td.mutex);
+    pthread_cond_destroy(&td.cv);
+}
+
 string generateResponse(string body)
 {
     std::stringstream header;
@@ -507,13 +517,7 @@ int main(int argc, char** argv) {
 
     // clean up the pthreads
     for(i = 0; i < NUM_PTHREADS; ++i) {
-        pthread_mutex_lock(&threads[i].mutex);
-        threads[i].kill = true;
-        pthread_cond_signal(&threads[i].cv);
-        pthread_mutex_unlock(&threads[i].mutex);
-        pthread_join(threads[i].pthread, NULL);
-        pthread_mutex_destroy(&threads[i].mutex);
-        pthread_cond_destroy(&threads[i].cv);
+        killThread(threads[i]);
     }
 
     // close any open connections

@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <poll.h>
 #include <map>
+#include <set>
 
 #define BUSY 0
 #define NOT_BUSY 1
@@ -36,6 +37,7 @@
 
 #define NUM_PTHREADS 5
 #define POLL_TIMEOUT 1000 * 60 * 60 * 24
+#define BUFFER_SIZE 1024
 
 using std::cerr;
 using std::cout;
@@ -64,13 +66,13 @@ typedef struct ThreadData {
 map <string, string> path_to_file;
 
 //read file from disk
-bool readFile(const char *abs_file_path, std::string *file_content) {
+bool readFile(string abs_file_path, std::string *file_content) {
     // the pthread file read routine
     //
     int status;
     struct stat st_buf;
 
-    status = stat(abs_file_path, &st_buf);
+    status = stat(abs_file_path.c_str(), &st_buf);
     if (status != 0) {
         cerr << "Error finding status of file system object." << endl;
         return false;
@@ -80,7 +82,7 @@ bool readFile(const char *abs_file_path, std::string *file_content) {
     // directory
     if (S_ISREG(st_buf.st_mode)) {
     // read the file into a string
-        ifstream t(abs_file_path);
+        ifstream t(abs_file_path.c_str());
         string file_str((istreambuf_iterator<char>(t)), 
                         istreambuf_iterator<char>());
         *file_content = file_str;
@@ -256,9 +258,14 @@ void* fileIOHelper(void* args) {
 
 string readFromSocket(int socket_fd)
 {
-    int size = 1024;
-    char *buf = (char *)malloc(size);
-    int rc = recv(socket_fd, buf, size, 0);
+    char *buf = (char *)malloc(BUFFER_SIZE);
+    int rc = recv(socket_fd, buf, BUFFER_SIZE, 0);
+    char *nl= strstr(buf, "\n");
+    if(nl == NULL)
+        return NULL;
+    if( *(nl - 1) == '\r')
+        nl --;
+    *nl = '\0';
     if (rc < 0)
     {
         if (errno != EWOULDBLOCK)
@@ -281,7 +288,6 @@ string readFromSocket(int socket_fd)
 string getRequestedFileName(string req_str)
 {
     unsigned int begin, end;
-    req_str.find("GET ");
     begin = req_str.find("GET ");
 
     if (begin != string::npos)
@@ -438,6 +444,7 @@ int main(int argc, char** argv) {
                     open_scks.insert(newsckfd);
 
                     string req_str = readFromSocket(newsckfd);
+
                     string file_name = getRequestedFileName(req_str);
 
                     // thread reads requested file
@@ -448,9 +455,9 @@ int main(int argc, char** argv) {
                     string abs_path_str(abs_path);
 
                     // find an idle thread
-                    bool threadDirpatched = false;
+                    bool threadDispatched = false;
                     int itr = 0;
-                    while (true) {
+                    while (!threadDispatched) {
                         // loop waiting for a free thread
                         int index = itr % NUM_PTHREADS;
                         pthread_mutex_lock(&threads[index].mutex);
@@ -458,7 +465,7 @@ int main(int argc, char** argv) {
                             // if the thread is not busy, tell it to get to work!
                             threads[index].file_path = abs_path_str;
                             pthread_cond_signal(&threads[index].cv);
-                            threadDirpatched = true;
+                            threadDispatched = true;
                         }
                         pthread_mutex_unlock(&threads[index].mutex);
                         itr++;

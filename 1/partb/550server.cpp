@@ -534,6 +534,7 @@ int main(int argc, char** argv) {
                             cout << "thread dispatched" << endl;
                             // if the thread is not busy, tell it to get to work!
                             threads[index].file_path = abs_path_str;
+                            threads[index].client_sck = newsckfd;
                             pthread_cond_signal(&threads[index].cv);
                             threadDispatched = true;
                         }

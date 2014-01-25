@@ -66,6 +66,7 @@ typedef struct ThreadData {
 // global variables
 
 ThreadData threads[NUM_PTHREADS];
+int selfpipes[NUM_PTHREADS];
 map <string, string> path_to_file;
 set<int> open_scks;
 pthread_attr_t pt_attr;
@@ -108,6 +109,7 @@ void killThread(ThreadData &td) {
     pthread_join(td.pthread, NULL);
     pthread_mutex_destroy(&td.mutex);
     pthread_cond_destroy(&td.cv);
+    close(td.pipefd);
 }
 
 string generateResponse(string body)
@@ -180,45 +182,6 @@ char readByteFromPipe (int pipe_fd) {
 
     cout << "readByteFromPipe: read = " << returned << endl;
     return returned;
-}
-
-char *read_from_fd (int fd)
-{
-    cout<<"read from fd"<<endl;
-    FILE *stream;
-    stream = fdopen (fd, "r");
-    //fseek(stream, 0, SEEK_END);
-    //long pos = ftell(stream);
-    //fseek(stream, 0, SEEK_SET);
-
-    //char *bytes = (char *)malloc(pos);
-    //fread(bytes, pos, 1, stream);
-    //fclose(stream);
-    //cout<<bytes<<endl;
-    //return bytes;
-
-    int c;
-    int size = 8;
-    char *buf = (char *)malloc(size);
-    char *ptr = buf;
-    while ((c = fgetc (stream)) != EOF)
-    {
-        if ((ptr - buf) >= size - 1)
-        {
-            char *new_buf = (char *)malloc(size * 2);
-            memcpy(new_buf, buf, size);
-            free(buf);
-            buf = new_buf;
-            ptr = new_buf + size - 1;
-            size *= 2;
-        }
-        *ptr = c;
-        ptr++;
-    }
-    fclose (stream);
-    *ptr = '\0';
-    cout<<buf<<endl;
-    return buf;
 }
 
 // the worker function for the pthreads
@@ -330,6 +293,7 @@ void cleanup() {
     // clean up the pthreads
     for(i = 0; i < NUM_PTHREADS; ++i) {
         killThread(threads[i]);
+        close(selfpipes[i]);
     }
 
     // close any open connections
@@ -355,7 +319,6 @@ int main(int argc, char** argv) {
     unsigned int cli_len;
     
     sckfd = NULL;
-    int selfpipes[NUM_PTHREADS];
 
     int exit_val = EXIT_SUCCESS;
 
@@ -477,12 +440,11 @@ int main(int argc, char** argv) {
             }
 
             // unknown event on the FD
-            /*
             if (!(poll_fd[i].revents & POLLIN)) {
                 cerr << "ERROR revents = " << poll_fd[i].revents << endl;
                 exit_val = EXIT_FAILURE;
                 goto cleanup;
-            }*/
+            }
 
             // activity on the listening socket
             if (poll_fd[i].fd == sckfd) {

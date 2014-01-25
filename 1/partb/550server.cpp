@@ -19,6 +19,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -339,7 +340,13 @@ void cleanup() {
     pthread_exit(NULL);
 }
 
-int main(int argc, char** argv) {    
+void exit_handler(int sig) {
+    cleanup();
+    exit(0);
+}
+
+int main(int argc, char** argv) {
+    struct sigaction sigIntHandler;
     struct sigaction act;
     struct sockaddr_in srv_addr, cli_addr;
     int portno, fcntlflags, newsckfd, i, num_fds;
@@ -392,6 +399,13 @@ int main(int argc, char** argv) {
     sigemptyset(&act.sa_mask);
     act.sa_flags=0;
     sigaction(SIGPIPE, &act, NULL);
+
+    // intercept ctrl-c
+    sigIntHandler.sa_handler= exit_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    sigaction(SIGINT, &sigIntHandler, NULL);
+
 	
     // get the port#
     portno = atoi(argv[2]);
@@ -439,15 +453,15 @@ int main(int argc, char** argv) {
         if (rv < 0)
         {
             cout<<"poll() failed"<<endl;
-            close(sckfd);
-            exit(0);
+            exit_val = EXIT_FAILURE;
+            goto cleanup;
         }
 
         if (rv == 0)
         {
             cout<<"poll() timeout"<<endl;
-            close(sckfd);
-            exit(0);
+            exit_val = EXIT_FAILURE;
+            goto cleanup;
         }
 
         // poll() returned with an event
@@ -492,9 +506,9 @@ int main(int argc, char** argv) {
                     
                     if (abs_path == 0)
                     {
-                        //TODO 
-                        //file can't find real path
-                        //close connection
+                        // file not found, close connection and continue
+                        closeConnection(newsckfd, open_scks);
+                        continue;
                     }
                     string abs_path_str(abs_path);
                     cout<<"abs path: "<<abs_path<<endl;
@@ -507,6 +521,7 @@ int main(int argc, char** argv) {
                         int index = itr % NUM_PTHREADS;
                         pthread_mutex_lock(&threads[index].mutex);
                         if (threads[index].status == NOT_BUSY) {
+                            cout << "thread dispatched" << endl;
                             // if the thread is not busy, tell it to get to work!
                             threads[index].file_path = abs_path_str;
                             pthread_cond_signal(&threads[index].cv);

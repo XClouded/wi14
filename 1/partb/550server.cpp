@@ -101,6 +101,7 @@ bool readFile(string abs_file_path, std::string *file_content) {
     return NULL;
 }
 
+// tells the thread to kill itself
 void killThread(ThreadData &td) {
     pthread_mutex_lock(&td.mutex);
     td.kill = true;
@@ -110,21 +111,6 @@ void killThread(ThreadData &td) {
     pthread_mutex_destroy(&td.mutex);
     pthread_cond_destroy(&td.cv);
     close(td.pipefd);
-}
-
-string generateResponse(string body)
-{
-    std::stringstream header;
-    int response_code = 200;
-    string message("OK");
-    header << "HTTP/1.1 " << response_code << " " << message << "\r\n";
-    //for (it = headers.begin(); it != headers.end(); it++) {
-    //      header << it->first << ": " << it->second << "\r\n";
-    //    }
-    header << "Content-length: " << body.size() << "\r\n";
-    header << "\r\n";
-    header << body;
-    return header.str();
 }
 
 void closeConnection(int sck_fd, set<int> &open_scks) {
@@ -168,7 +154,6 @@ int writeToSocket(int fd, string *str)
 
 char readByteFromPipe (int pipe_fd) {
     int returned = 0, c = 0;
-    cout<<"read from pipe"<<endl;
 
     //returned = fgetc(stream);
     read(pipe_fd, &returned, 1);
@@ -180,7 +165,6 @@ char readByteFromPipe (int pipe_fd) {
         cerr << "ERROR extra bytes in pipe" << endl;
     }
 
-    cout << "readByteFromPipe: read = " << returned << endl;
     return returned;
 }
 
@@ -195,7 +179,6 @@ void* fileIOHelper(void* args) {
     while (true) {
         // wait for the condition variable to be triggered to do file IO
         pthread_cond_wait(&td->cv, &td->mutex);
-        cout << "thread working" << endl;
 
         // if the thread should stop, break
         if (td->kill) break;
@@ -203,12 +186,12 @@ void* fileIOHelper(void* args) {
         bool read_file_success = true;
         if(path_to_file.count(td->file_path))
         {
-            cout << "file already in cache" << endl;
+            // file already in cache
             file_content = path_to_file[td->file_path];
         }
         else
         {
-            cout << "file not in cache, reading" << endl;
+            // file needs to be read
             read_file_success = readFile(td->file_path, &file_content);
             if(read_file_success) {
                 path_to_file[td->file_path] = file_content;
@@ -223,13 +206,12 @@ void* fileIOHelper(void* args) {
             result[0] = READ_FAILURE;
         }
 
-        cout << "read result: " << result[0] << endl;
+        // write the result to the pipe
         write(td->pipefd, result, 1);
     }
 
     pthread_mutex_unlock(&td->mutex);
 
-    pthread_exit(NULL);
     return args;
 }
 
@@ -262,23 +244,11 @@ string readFromSocket(int socket_fd)
     return result;
 }
 
-string getRequestedFileName(string req_str)
-{
-    unsigned int begin, end;
-    begin = req_str.find("GET ");
-
-    if (begin != string::npos)
-        begin += 4;
-    else
-        return NULL;
-
-    end = req_str.find(' ', begin);
-    return req_str.substr(begin, end-begin);
-}
-
 void cleanup() {
     int i;
     set<int>::iterator it;
+
+    cout << "starting cleanup..." << endl;
 
     // clean up the listening socket
     if (sckfd != NULL) {
@@ -298,12 +268,11 @@ void cleanup() {
     }
 
     pthread_attr_destroy(&pt_attr);
-
-    pthread_exit(NULL);
 }
 
 void exit_handler(int sig) {
     cleanup();
+    pthread_exit(NULL);
     exit(0);
 }
 
@@ -400,6 +369,7 @@ int main(int argc, char** argv) {
     }
     cout << "listen done" << endl;
 
+    cout << "server starting" << endl;
     // loop, waiting for activity
     num_fds = 1 + NUM_PTHREADS;
     while (true) {
@@ -414,17 +384,16 @@ int main(int argc, char** argv) {
 
         int rv = poll(poll_fd, num_fds, POLL_TIMEOUT);
 
-        cout << "poll returned" << endl;
         if (rv < 0)
         {
-            cout<<"poll() failed"<<endl;
+            cerr<<"poll() failed"<<endl;
             exit_val = EXIT_FAILURE;
             goto cleanup;
         }
 
         if (rv == 0)
         {
-            cout<<"poll() timeout"<<endl;
+            cerr<<"poll() timeout"<<endl;
             exit_val = EXIT_FAILURE;
             goto cleanup;
         }
@@ -456,17 +425,12 @@ int main(int argc, char** argv) {
                     // no more incoming connections
                     if (newsckfd == -1) break;
 
-                    cout << "accept done" << endl;
-
                     open_scks.insert(newsckfd);
 
+                    // read the request in from the socket
                     string req_str = readFromSocket(newsckfd);
 
-                    //string file_name = getRequestedFileName(req_str);
-
-                    // thread reads requested file
-                    //string relative_path = file_name.insert(0, ".");
-
+                    // convert the requested file to its realpath
                     char abs_path[BUFFER_SIZE];
                     realpath(req_str.c_str(), abs_path);
                     
@@ -478,17 +442,17 @@ int main(int argc, char** argv) {
                     }
 
                     string abs_path_str(abs_path);
-                    cout<<"abs path: "<<abs_path<<endl;
 
-                    // find an idle thread
+                    // find an idle thread to read in the file
                     bool threadDispatched = false;
                     int itr = 0;
                     while (!threadDispatched) {
                         // loop waiting for a free thread
                         int index = itr % NUM_PTHREADS;
                         pthread_mutex_lock(&threads[index].mutex);
+
+                        // if the thread is free...
                         if (threads[index].status == NOT_BUSY) {
-                            cout << "thread dispatched" << endl;
                             threads[index].status = BUSY;
                             // if the thread is not busy, tell it to get to work!
                             threads[index].file_path = abs_path_str;
@@ -499,8 +463,6 @@ int main(int argc, char** argv) {
                         pthread_mutex_unlock(&threads[index].mutex);
                         itr++;
                     }
-
-                    cout << "incoming connection accepted" << endl;
                 }
             } else if (poll_fd[i].revents == POLLIN) {
                 // this is a thread pipe
@@ -523,5 +485,6 @@ int main(int argc, char** argv) {
     cleanup:
 
     cleanup();
+    pthread_exit(NULL);
     return exit_val;
 }

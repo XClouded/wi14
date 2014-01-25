@@ -193,13 +193,9 @@ void* fileIOHelper(void* args) {
     // lock the mutex for this thread
     pthread_mutex_lock(&td->mutex);
     while (true) {
-        td->status = NOT_BUSY;
-
         // wait for the condition variable to be triggered to do file IO
         pthread_cond_wait(&td->cv, &td->mutex);
         cout << "thread working" << endl;
-
-        td->status = BUSY;
 
         // if the thread should stop, break
         if (td->kill) break;
@@ -350,6 +346,7 @@ int main(int argc, char** argv) {
         threads[i].pipefd = pfd[1];
         threads[i].kill = false;
         threads[i].client_sck = 0;
+        threads[i].status = NOT_BUSY;
     }
 
     // create a new socket for the server
@@ -492,6 +489,7 @@ int main(int argc, char** argv) {
                         pthread_mutex_lock(&threads[index].mutex);
                         if (threads[index].status == NOT_BUSY) {
                             cout << "thread dispatched" << endl;
+                            threads[index].status = BUSY;
                             // if the thread is not busy, tell it to get to work!
                             threads[index].file_path = abs_path_str;
                             threads[index].client_sck = newsckfd;
@@ -516,6 +514,7 @@ int main(int argc, char** argv) {
 
                 // close the connection
                 closeConnection(threads[i-1].client_sck, open_scks);
+                threads[i-1].status = NOT_BUSY;
                 threads[i-1].client_sck = 0;
             }
         }

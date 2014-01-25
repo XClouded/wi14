@@ -237,6 +237,8 @@ void* fileIOHelper(void* args) {
 
         // wait for the condition variable to be triggered to do file IO
         pthread_cond_wait(&td->cv, &td->mutex);
+        cout << "thread working" << endl;
+
         td->status = BUSY;
 
         // if the thread should stop, break
@@ -245,14 +247,16 @@ void* fileIOHelper(void* args) {
         bool read_file_success = true;
         if(path_to_file.count(td->file_path))
         {
+            cout << "file already in cache" << endl;
             file_content = path_to_file[td->file_path];
         }
         else
         {
-            read_file_success = readFile(td->file_path.c_str(), &file_content);
-           if(read_file_success) {
-               path_to_file[td->file_path] = file_content;
-           }
+            cout << "file not in cache, reading" << endl;
+            read_file_success = readFile(td->file_path, &file_content);
+            if(read_file_success) {
+                path_to_file[td->file_path] = file_content;
+            }
         }
         if(read_file_success)
         {
@@ -263,6 +267,7 @@ void* fileIOHelper(void* args) {
             result[0] = READ_FAILURE;
         }
 
+        cout << "read result: " << result[0] << endl;
         write(td->pipefd, result, 1);
     }
 
@@ -445,11 +450,14 @@ int main(int argc, char** argv) {
         memset(poll_fd, 0 , sizeof(poll_fd));
         poll_fd[0].fd = sckfd;
         poll_fd[0].events = POLLIN;
-        for(i=0; i<num_fds; ++i) {
+        for(i=1; i<num_fds; ++i) {
+            poll_fd[i].fd = selfpipes[i-1];
             poll_fd[i].events = POLLIN;
         }
 
         int rv = poll(poll_fd, num_fds, POLL_TIMEOUT);
+
+        cout << "poll returned" << endl;
         if (rv < 0)
         {
             cout<<"poll() failed"<<endl;
@@ -472,9 +480,10 @@ int main(int argc, char** argv) {
             }
 
             // unknown event on the FD
-            if (poll_fd[i].revents != POLLIN) {
+            if (!(poll_fd[i].revents & POLLIN)) {
                 cerr << "ERROR revents = " << poll_fd[i].revents << endl;
-                exit(0); //don't know what to do!
+                exit_val = EXIT_FAILURE;
+                goto cleanup;
             }
 
             // activity on the listening socket
@@ -510,6 +519,7 @@ int main(int argc, char** argv) {
                         closeConnection(newsckfd, open_scks);
                         continue;
                     }
+
                     string abs_path_str(abs_path);
                     cout<<"abs path: "<<abs_path<<endl;
 
@@ -530,6 +540,8 @@ int main(int argc, char** argv) {
                         pthread_mutex_unlock(&threads[index].mutex);
                         itr++;
                     }
+
+                    cout << "incoming connection accepted" << endl;
                 }
             } else {
                 // this is a thread pipe

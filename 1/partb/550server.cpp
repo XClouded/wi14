@@ -62,8 +62,13 @@ typedef struct ThreadData {
     bool kill;
 } ThreadData;
 
-// globally used
+// global variables
+
+ThreadData threads[NUM_PTHREADS];
 map <string, string> path_to_file;
+set<int> open_scks;
+pthread_attr_t pt_attr;
+int sckfd;
 
 //read file from disk
 bool readFile(string abs_file_path, std::string *file_content) {
@@ -220,7 +225,6 @@ char *read_from_fd (int fd)
 
 // the worker function for the pthreads
 void* fileIOHelper(void* args) {
-    cout<<"in file IO"<<endl;
     string file_content;
     ThreadData* td = (ThreadData*)args;
     int result[1];
@@ -310,17 +314,39 @@ string getRequestedFileName(string req_str)
     return req_str.substr(begin, end-begin);
 }
 
-int main(int argc, char** argv) {
-    set<int> open_scks;
+void cleanup() {
+    int i;
     set<int>::iterator it;
+
+    // clean up the listening socket
+    if (sckfd != NULL) {
+        close(sckfd);
+        sckfd = NULL;
+    }
+
+    // clean up the pthreads
+    for(i = 0; i < NUM_PTHREADS; ++i) {
+        killThread(threads[i]);
+    }
+
+    // close any open connections
+    for (it = open_scks.begin(); it!=open_scks.end(); ++it) {
+        close(*it);
+    }
+
+    pthread_attr_destroy(&pt_attr);
+
+    pthread_exit(NULL);
+}
+
+int main(int argc, char** argv) {    
     struct sigaction act;
     struct sockaddr_in srv_addr, cli_addr;
-    int sckfd = NULL, portno, fcntlflags, newsckfd, i, num_fds;
+    int portno, fcntlflags, newsckfd, i, num_fds;
     unsigned int cli_len;
     
-    ThreadData threads[NUM_PTHREADS];
+    sckfd = NULL;
     int selfpipes[NUM_PTHREADS];
-    pthread_attr_t pt_attr;
 
     int exit_val = EXIT_SUCCESS;
 
@@ -509,25 +535,6 @@ int main(int argc, char** argv) {
 
     cleanup:
 
-    // clean up the listening socket
-    if (sckfd != NULL) {
-        close(sckfd);
-        sckfd = NULL;
-    }
-
-    // clean up the pthreads
-    for(i = 0; i < NUM_PTHREADS; ++i) {
-        killThread(threads[i]);
-    }
-
-    // close any open connections
-    for (it = open_scks.begin(); it!=open_scks.end(); ++it) {
-        close(*it);
-    }
-
-    pthread_attr_destroy(&pt_attr);
-
-    pthread_exit(NULL);
-
+    cleanup();
     return exit_val;
 }

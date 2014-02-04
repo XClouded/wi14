@@ -8,11 +8,23 @@ import java.util.Map;
  */
 public class PaxosNode {
 	Map<Integer, Integer> roundState; //TODO make this real
-	int currentRound;
-	int clock;
+	int currentRound; // for multi-paxos
+	int clock; // for proposal #'s
 	
 	public PaxosNode () {
 		clock = 0;
 		currentRound = 0;
+	}
+	
+	private class Proposer {
+		
+	}
+	
+	private class Acceptor {
+		
+	}
+	
+	private class Learner {
+		
 	}
 }

@@ -1,30 +1,19 @@
 import java.util.Map;
 
+import state.PaxosState;
+
 
 /**
- * Holds the paxos state machine. Designed to be the backbone of a distributed lock service.
- * @author JakeS
+ * Represents a node in a distributed paxos system. Designed to be the backbone of a distributed lock service.
  *
  */
 public class PaxosNode {
-	Map<Integer, Integer> roundState; //TODO make this real
+	Map<Integer, PaxosState> roundState;
 	int currentRound; // for multi-paxos
 	int clock; // for proposal #'s
 	
 	public PaxosNode () {
 		clock = 0;
 		currentRound = 0;
-	}
-	
-	private class Proposer {
-		
-	}
-	
-	private class Acceptor {
-		
-	}
-	
-	private class Learner {
-		
 	}
 }

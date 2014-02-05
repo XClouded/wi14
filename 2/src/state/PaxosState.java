@@ -1,10 +1,12 @@
 package state;
 
+import java.io.Serializable;
+
 /**
  * Represents the states of a proposer, acceptor, and learner for a single instance of paxos.
  *
  */
-public class PaxosState {
+public class PaxosState implements Serializable{
 	public Proposer proposer;
 	public Acceptor acceptor;
 	public Learner learner;

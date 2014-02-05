@@ -1,5 +1,7 @@
 package state;
 
-public class Learner {
+import java.io.Serializable;
+
+public class Learner implements Serializable{
 
 }

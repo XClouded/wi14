@@ -1,5 +1,7 @@
 package state;
 
-public class Proposer {
+import java.io.Serializable;
+
+public class Proposer implements Serializable{
 	
 }

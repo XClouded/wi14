@@ -1,5 +1,7 @@
-import java.net.DatagramSocket;
-import java.net.SocketException;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Map;
 
 import state.PaxosState;
@@ -10,7 +12,7 @@ import state.PaxosState;
  *
  */
 public class PaxosNode {	
-	public static void main(String[] args) throws SocketException {
+	public static void main(String[] args) throws IOException {
 		Map<Integer, PaxosState> roundState;
 		int currentRound; // for multi-paxos
 		int clock; // for proposal #'s
@@ -30,8 +32,24 @@ public class PaxosNode {
 			System.exit(1);
 		}
 		
-		DatagramSocket serverSocket = new DatagramSocket(listenPort);
+		ServerSocket welcomeSocket = new ServerSocket(listenPort);
 		
 		// TODO set up a receive loop
+		while(true){
+			Socket connectionSocket = welcomeSocket.accept();
+			ObjectInputStream inFromClient = new ObjectInputStream(connectionSocket.getInputStream());
+			
+			int test = inFromClient.readInt();
+            //BufferedReader inFromClient =
+            //   new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+            //DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
+            
+            //clientSentence = inFromClient.readLine();
+            System.out.println("Received: " + test);
+            //capitalizedSentence = clientSentence.toUpperCase() + '\n';
+            //outToClient.writeBytes(capitalizedSentence);
+            inFromClient.close();
+            connectionSocket.close();
+		}
 	}
 }

@@ -4,6 +4,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
 
+import data.Proj2Message;
+
 import state.PaxosState;
 
 
@@ -14,8 +16,8 @@ import state.PaxosState;
 public class PaxosNode {	
 	public static void main(String[] args) throws IOException {
 		Map<Integer, PaxosState> roundState;
-		int currentRound; // for multi-paxos
-		int clock; // for proposal #'s
+		int currentRound = 0; // for multi-paxos
+		int clock = 0; // for proposal #'s
 		
 		if (args.length < 1) {
 			System.out.println("Must specify port to listen on");
@@ -39,15 +41,16 @@ public class PaxosNode {
 			Socket connectionSocket = welcomeSocket.accept();
 			ObjectInputStream inFromClient = new ObjectInputStream(connectionSocket.getInputStream());
 			
-			int test = inFromClient.readInt();
-            //BufferedReader inFromClient =
-            //   new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-            //DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
-            
-            //clientSentence = inFromClient.readLine();
-            System.out.println("Received: " + test);
-            //capitalizedSentence = clientSentence.toUpperCase() + '\n';
-            //outToClient.writeBytes(capitalizedSentence);
+			try {
+				Proj2Message msg = (Proj2Message)inFromClient.readObject();
+				
+				switch(msg.command) {
+				//case 
+				}
+			} catch (ClassNotFoundException e) {
+				System.err.println("Class not found exception, falied to cast message");
+			}
+			
             inFromClient.close();
             connectionSocket.close();
 		}

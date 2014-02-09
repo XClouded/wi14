@@ -18,11 +18,6 @@ public class LockClient extends Proj2Node{
 
 	public LockClient(String[] args) throws UnknownHostException, IOException {
 		super();
-		if (args.length < 1) {
-			System.out.println("Must specify port to listen on");
-			System.out.println("e.g. 'LockClient 9000'");
-			System.exit(1);
-		}
 
 		clock = 0;
 		port = 0;
@@ -34,7 +29,7 @@ public class LockClient extends Proj2Node{
 			System.exit(1);
 		}
 	}
-	
+
 	public void run() throws IOException {
 
 		// open a listening socket
@@ -75,9 +70,8 @@ public class LockClient extends Proj2Node{
 
 					System.out.println("Sending unlock request for "+commandSplit[1]);
 					sendMessage(req, PAXOS_MEMBERS[0]);
-					Proj2Message resp = receiveMessage();
-					//TODO debug print
-					System.out.println("lock requst response fomr server: "+resp);
+
+					receiveConfirmation(action);
 				}
 			} else if (UNLOCK.equalsIgnoreCase(commandSplit[0])) {
 				// send an unlock request
@@ -96,16 +90,14 @@ public class LockClient extends Proj2Node{
 					req.data = action;
 
 					System.out.println("Sending unlock request for "+commandSplit[1]);
-							sendMessage(req, PAXOS_MEMBERS[0]);
-							Proj2Message resp = receiveMessage();
-							//TODO debug print
-							System.out.println("lock requst response fomr server: "+resp);
+					sendMessage(req, PAXOS_MEMBERS[0]);
+					receiveConfirmation(action);
 				}
 			} else {
 				System.out.println("Unknown command: " + commandSplit[0]);
 			}
 
-			
+			/*
 			// send a test message to the paxos node at 9002
 			// TODO remove test code
 	        Proj2Message req = new Proj2Message();
@@ -117,9 +109,17 @@ public class LockClient extends Proj2Node{
 
 			// wait for a response from a learner
 			Proj2Message msg = receiveMessage();
-			System.out.println("Got message as client: " + msg);
+			System.out.println("Got message as client: " + msg);*/
 		}
-		
+
 		msgSocket.close();
+	}
+
+	private void receiveConfirmation(LockAction actionToWaitFor) throws IOException {
+		Proj2Message msg = null;
+		do {
+			msg = receiveMessage();
+			System.out.println("Got message as client: " + msg);
+		} while (!actionToWaitFor.equals(msg.data));
 	}
 }

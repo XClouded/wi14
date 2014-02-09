@@ -34,12 +34,6 @@ public class PaxosNode extends Proj2Node{
 		currentRound = 0; // for multi-paxos
 		clock = 0; // for proposal #'s
 		nid = 0;
-		
-		if (args.length < 1) {
-			System.out.println("Must specify port to listen on");
-			System.out.println("e.g. 'PaxosNode 9001'");
-			System.exit(1);
-		}
 
 		try {
 			nid = Integer.parseInt(args[0]);

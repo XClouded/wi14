@@ -18,11 +18,6 @@ public class LockClient extends Proj2Node{
 
 	public LockClient(String[] args) throws UnknownHostException, IOException {
 		super();
-		if (args.length < 1) {
-			System.out.println("Must specify port to listen on");
-			System.out.println("e.g. 'LockClient 9000'");
-			System.exit(1);
-		}
 
 		clock = 0;
 		port = 0;

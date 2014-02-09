@@ -95,9 +95,10 @@ public class PaxosNode {
             	//error, ignore
             }
             //send response message
-            for(int i = 0; i < respMsg.to.length; i++){
-            	int dest = respMsg.to[i];
-            	//TODO send respMsg to dest
+            if (respMsg.to == 0){
+            	sendToAllPaxos(respMsg);
+            }else{
+            	sendMessage(respMsg, respMsg.to);
             }
             
             // TODO remove test code

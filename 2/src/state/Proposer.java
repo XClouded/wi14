@@ -2,9 +2,9 @@ package state;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.TreeMap;
-
 import Host.PaxosNode;
+import Host.Proj2Node;
+
 import data.LockAction;
 import data.PaxosMessage;
 import data.Proj2Message;
@@ -104,7 +104,7 @@ public class Proposer implements Serializable{
 	 * should not propose the same proposal number. 
 	 */
 	private int nextProposalNum(int currentProposalNum){
-		return currentProposalNum + PaxosNode.NODE_COUNT;
+		return currentProposalNum + Proj2Node.NODE_COUNT;
 	}
 	
 }

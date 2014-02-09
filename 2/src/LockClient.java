@@ -21,6 +21,7 @@ public class LockClient {
 			System.exit(1);
 		}
 		
+		int clock = 0;
 		int port = 0;
 		
 		try {
@@ -40,11 +41,17 @@ public class LockClient {
 			
 			if(EXIT.equalsIgnoreCase(command)) break;
 			
-			// send a dumb int to the paxos node at 9001
-			Socket outSocket = new Socket("localhost", 9001);
+			// send a test message to the paxos node at 9002
+			Socket outSocket = new Socket("localhost", 9002);
 			ObjectOutputStream outToServer = new ObjectOutputStream(outSocket.getOutputStream());
 			
-			outToServer.writeInt(5);			
+			// TODO remove test code
+            Proj2Message req = new Proj2Message();
+            req.clockVal = clock;
+            req.from = port;
+            req.command = Proj2Message.Command.LOCK_REQUEST;
+            
+            outToServer.writeObject(req);
 			
 			// close the to server connection
 			outToServer.close();
@@ -63,6 +70,7 @@ public class LockClient {
 				System.err.println("Class not found exception, failed to cast message");
 			}
 			
+			System.out.println("Got message as client: " + msg);
 			//TODO keep working on message processing
 			// close the from server connection
 			responseSocket.close();

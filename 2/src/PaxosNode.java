@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
@@ -58,9 +59,22 @@ public class PaxosNode {
             //TODO handle each request based on the command
             switch(msg.command) {
             	default:
+            		System.out.println("Paxos got message: " + msg);
             }
             
-            //Socket sckToClient = new Socket("localhost", )
+            // TODO remove test code
+            Proj2Message resp = new Proj2Message();
+            resp.clockVal = clock;
+            resp.from = nid;
+            resp.command = Proj2Message.Command.LOCK_RESPONSE;
+            
+            Socket sckToClient = new Socket("localhost", msg.from);
+            ObjectOutputStream outToClient = new ObjectOutputStream(sckToClient.getOutputStream());
+            
+            outToClient.writeObject(resp);
+            
+            outToClient.close();
+            sckToClient.close();
 		}
 	}
 }

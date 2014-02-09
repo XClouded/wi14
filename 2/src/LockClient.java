@@ -119,6 +119,8 @@ public class LockClient {
 			// wait for a response from a learner
 			Proj2Message msg = receiveMessage();
 			System.out.println("Got message as client: " + msg);*/
+			
+			listenSocket.close();
 		}
 	}
 	

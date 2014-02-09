@@ -13,6 +13,8 @@ import data.Proj2Message;
 public class LockClient {
 	private static final int[] PAXOS_MEMBERS = {9002, 9003, 9004, 9005, 9006};
 	private static final String EXIT = "exit";
+	private static final String LOCK = "lock";
+	private static final String UNLOCK = "unlock";
 	
 	// static assumes 1 lock client per process
 	private static int clock, port;
@@ -40,6 +42,7 @@ public class LockClient {
 		System.out.println("Client started!");
 		while(true) {
 			// receive the command from the command line
+			System.out.print("Command: ");
 			command = br.readLine();
 			
 			// if the command is to exit, exit!

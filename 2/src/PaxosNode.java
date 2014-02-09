@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -96,5 +97,18 @@ public class PaxosNode {
         
         outToClient.close();
         sckToClient.close();
+	}
+	
+	public static void sendToAllOtherPaxos(Proj2Message msg) throws UnknownHostException, IOException {
+		for(int node : PAXOS_MEMBERS) {
+			if (node != nid) {
+				try {
+					sendMessage(msg, node);
+				} catch (ConnectException e) {
+					// could not connect
+					// node is down, ignore
+				}
+			}
+		}
 	}
 }

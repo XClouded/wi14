@@ -128,11 +128,16 @@ public class LockClient {
 			// wait for a response from a learner
 			Proj2Message msg = receiveMessage();
 			System.out.println("Got message as client: " + msg);
-
-			msgSocket.close();
 		}
+		
+		msgSocket.close();
 	}
 
+	/**
+	 * Receive a Proj2Message on msgSocket
+	 * @return the received Proj2Message
+	 * @throws IOException
+	 */
 	private static Proj2Message receiveMessage() throws IOException {
 		byte[] receiveData = new byte[1024];
 		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
@@ -166,6 +171,12 @@ public class LockClient {
 		return msg;
 	}
 
+	/**
+	 * Send a Proj2Message to the specified node on msgSocket
+	 * @param msg the Proj2Message to send
+	 * @param to the node to send it to
+	 * @throws IOException
+	 */
 	private static void sendMessage(Proj2Message msg, int to) throws IOException {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		ObjectOutput out = null;

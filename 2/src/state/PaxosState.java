@@ -2,7 +2,6 @@ package state;
 
 import java.io.Serializable;
 
-import Host.PaxosNode;
 
 /**
  * Represents the states of a proposer, acceptor, and learner for a single instance of paxos.

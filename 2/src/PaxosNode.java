@@ -65,7 +65,7 @@ public class PaxosNode {
             Proj2Message resp = new Proj2Message();
             resp.clockVal = clock;
             resp.from = nid;
-            resp.command = Proj2Message.Command.LOCK_RESPONSE;
+            resp.command = Proj2Message.Command.LOCK_SERVICE_RESPONSE;
             
             sendMessage(resp, msg.from);
 		}

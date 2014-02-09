@@ -13,7 +13,7 @@ public class Proj2Message implements Serializable{
 		PREPARE, PROMISE, ACCEPT_REQUEST, ACCEPTED, LEARN, 
 		
 		// lock service commands
-		LOCK_REQUEST, LOCK_RESPONSE
+		LOCK_SERVICE_REQUEST, LOCK_SERVICE_RESPONSE
 	}
 	
 	public int clockVal, from;

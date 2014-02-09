@@ -12,7 +12,16 @@ public class ClientMain {
 			System.exit(1);
 		}
 		
-		LockClient client = new LockClient(args);
+		int port = 0;
+		
+		try {
+			port = Integer.parseInt(args[0]);
+		} catch (Exception e) {
+			System.out.println("Unable to parse port: "+args[0]);
+			System.exit(1);
+		}
+		
+		LockClient client = new LockClient(port);
 		
 		client.run();
 	}

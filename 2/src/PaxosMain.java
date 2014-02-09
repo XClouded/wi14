@@ -13,7 +13,16 @@ public class PaxosMain {
 			System.exit(1);
 		}
 		
-		PaxosNode node = new PaxosNode(args);
+		int nodeId = 0;
+		
+		try {
+			nodeId = Integer.parseInt(args[0]);
+		} catch (Exception e) {
+			System.out.println("Unable to parse port: "+args[0]);
+			System.exit(1);
+		}
+		
+		PaxosNode node = new PaxosNode(nodeId);
 		
 		node.run();
 	}

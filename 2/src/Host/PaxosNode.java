@@ -28,19 +28,12 @@ public class PaxosNode extends Proj2Node{
 	public static int nid, clock; 
 	public static Queue<LockAction> requests;
 	
-	public PaxosNode(String[] args) throws UnknownHostException, SocketException {
+	public PaxosNode(int nodeId) throws UnknownHostException, SocketException {
 		super();
 		roundState = new TreeMap<Integer, PaxosState>();
 		currentRound = 0; // for multi-paxos
 		clock = 0; // for proposal #'s
-		nid = 0;
-
-		try {
-			nid = Integer.parseInt(args[0]);
-		} catch (Exception e) {
-			System.out.println("Unable to parse port: "+args[0]);
-			System.exit(1);
-		}
+		nid = nodeId;
 	}
 	
 	public void run() throws IOException {	

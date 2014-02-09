@@ -16,18 +16,11 @@ public class LockClient extends Proj2Node{
 
 	private int clock, port;
 
-	public LockClient(String[] args) throws UnknownHostException, IOException {
+	public LockClient(int port) throws UnknownHostException, IOException {
 		super();
 
 		clock = 0;
-		port = 0;
-
-		try {
-			port = Integer.parseInt(args[0]);
-		} catch (Exception e) {
-			System.out.println("Unable to parse port: "+args[0]);
-			System.exit(1);
-		}
+		this.port = port;
 	}
 
 	public void run() throws IOException {

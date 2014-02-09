@@ -7,10 +7,11 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Map;
+import java.util.Queue;
 import java.util.TreeMap;
 
+import data.LockAction;
 import data.Proj2Message;
-
 import state.PaxosState;
 
 
@@ -19,7 +20,7 @@ import state.PaxosState;
  *
  */
 public class PaxosNode {
-	private static final int[] PAXOS_MEMBERS = {9002, 9003, 9004, 9005, 9006};
+	public static final int[] PAXOS_MEMBERS = {9002, 9003, 9004, 9005, 9006};
 	public static final int NODE_COUNT = PAXOS_MEMBERS.length;
 	public static final int MAJORITY_SIZE = NODE_COUNT / 2 + 1;
 
@@ -27,6 +28,7 @@ public class PaxosNode {
 	private static TreeMap<Integer, PaxosState> roundState;
 	public static int currentRound, clock, nid; 
 	private static ServerSocket welcomeSocket;
+	public static Queue<LockAction> requests;
 
 	public static void main(String[] args) throws IOException {
 		roundState = new TreeMap<Integer, PaxosState>();
@@ -59,6 +61,7 @@ public class PaxosNode {
             clock = Math.max(clock, msg.clockVal) + 1;
             
             PaxosState ps = roundState.get(currentRound);//TODO should replace this with the 
+            Proj2Message respMsg = null;
             //TODO handle each request based on the command
             switch(msg.command) {
             
@@ -70,13 +73,21 @@ public class PaxosNode {
 	            	//TODO 
 	            case PROMISE:
 	            case ACCEPTED:
-	            	ps.proposer.handleMessage(msg);
+	            	respMsg = ps.proposer.handleMessage(msg);
 	            	break;
 	            case LEARN:
 	            	ps.learner.handleMessage(msg);
 	            	break;
             	default:
             		System.out.println("Paxos got message: " + msg);
+            }
+            if(respMsg == null){
+            	//error, ignore
+            }
+            //send response message
+            for(int i = 0; i < respMsg.to.length; i++){
+            	int dest = respMsg.to[i];
+            	//TODO send respMsg to dest
             }
             
             // TODO remove test code
@@ -93,7 +104,7 @@ public class PaxosNode {
 		Socket connectionSocket = welcomeSocket.accept();
 		ObjectInputStream inFromClient = new ObjectInputStream(connectionSocket.getInputStream());
 		Proj2Message msg = null;
-
+		
 		try {
 			msg = (Proj2Message)inFromClient.readObject();
 		} catch (ClassNotFoundException e) {

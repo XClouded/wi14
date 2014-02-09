@@ -1,9 +1,12 @@
 package state;
 
 import java.io.Serializable;
+import java.util.Map;
+import java.util.TreeMap;
 
 import Host.PaxosNode;
 import data.LockAction;
+import data.PaxosMessage;
 import data.Proj2Message;
 import data.Proj2Message.Command;
 
@@ -12,11 +15,12 @@ public class Proposer implements Serializable{
 	private enum State{
 		IDLE, 
 		PREPARING,
-		ACCEPTING,
+		ACCEPTED,
 	}
 	
 	private State state;
 	private int currentProposalNumber;
+	private Map<Integer, PaxosMessage> promisesReceived; //nid to promise
 	
 	public Proposer(){
 		state = State.IDLE;
@@ -41,24 +45,50 @@ public class Proposer implements Serializable{
 			
 			//create prepare message
 			result.command = Command.PREPARE;
-			currentProposalNumber = PaxosNode.nid;
-			result.clockVal = nextProposalNum(currentProposalNumber);
-			result.data = msg.data;
-			
+			currentProposalNumber = nextProposalNum(PaxosNode.nid);
+			result.data = new PaxosMessage(PaxosNode.currentRound, 
+										   currentProposalNumber, 
+										   (LockAction)msg.data);
+			result.to = PaxosNode.PAXOS_MEMBERS;
 			//change proposer state
 			state = State.PREPARING;
 			break;
 		case PROMISE:
 			if(state != State.PREPARING){
-				System.err.println("Proposer is not asking for promise now");
+				System.err.println("Proposer is not asking for promise now. Ignore");
 				return null;
 			}
-			
+			if (!(msg.data instanceof PaxosMessage)){
+				System.err.println("Received message data is not an "
+						+ "instance of PaxosMessage");
+				return null;
+			}
+			promisesReceived.put(msg.from, (PaxosMessage)msg.data);
+			if (promisesReceived.size() >= PaxosNode.MAJORITY_SIZE){//got response from majority
+				int highestPromisedNum = Integer.MIN_VALUE;
+				LockAction action = null;
+				for(int nid : promisesReceived.keySet()){
+					PaxosMessage pm = promisesReceived.get(nid);
+					if (pm.proposalNum > highestPromisedNum){
+						highestPromisedNum = pm.proposalNum;
+						action = pm.value;
+					}
+				}
+				if(action == null){
+					//no proposals from acceptors
+					action = PaxosNode.requests.poll();
+				}
+				currentProposalNumber = nextProposalNum(currentProposalNumber);
+				result.command = Command.ACCEPT_REQUEST;
+				result.data = new PaxosMessage(PaxosNode.currentRound, currentProposalNumber, action);
+				result.to = PaxosNode.PAXOS_MEMBERS;
+			}
 			break;
 		case ACCEPTED:
-			if(state != State.ACCEPTING){
+			if(state != State.PREPARING){
 				System.err.println("Proposer is not expecting any accepting message");
 			}
+			state = State.ACCEPTED;
 			break;
 		default:
 			
@@ -77,13 +107,4 @@ public class Proposer implements Serializable{
 		return currentProposalNum + PaxosNode.NODE_COUNT;
 	}
 	
-	private void propose(LockAction value){
-		
-	}
-	
-	private void proposalResponse(){
-		
-	}
-	
-
 }

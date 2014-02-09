@@ -1,6 +1,7 @@
 package data;
 
 import java.io.Serializable;
+import java.util.Set;
 
 /**
  * Class to pass messages around.
@@ -17,6 +18,7 @@ public class Proj2Message implements Serializable{
 	}
 	
 	public int clockVal, from;
+	public int[] to;
 	public Command command;
 	public Serializable data;
 	

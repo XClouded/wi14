@@ -27,4 +27,5 @@ public class Proj2Message implements Serializable{
 		
 		return str;
 	}
+	
 }

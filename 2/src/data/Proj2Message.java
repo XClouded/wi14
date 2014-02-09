@@ -13,15 +13,16 @@ public class Proj2Message implements Serializable{
 		PREPARE, PROMISE, ACCEPT_REQUEST, ACCEPTED, LEARN, 
 		
 		// lock service commands
-		LOCK_REQUEST, LOCK_RESPONSE
+		LOCK_SERVICE_REQUEST, LOCK_SERVICE_RESPONSE
 	}
 	
-	public int clockVal;
+	public int clockVal, from;
 	public Command command;
 	public Serializable data;
 	
 	public String toString() {
-		String str = "clock: " + clockVal;
+		String str = "from node: " + from;
+		str += " clock: " + clockVal;
 		str += " command: " + command;
 		str += " data: " + data;
 		

@@ -12,37 +12,36 @@ public class Proposer implements Serializable{
 	private enum State{
 		IDLE, 
 		PREPARING,
-		ACCEPTED,
+		ACCEPTING,
 	}
 	
 	private State state;
-	private PaxosNode server;
 	private int currentProposalNumber;
 	
-	
-	public Proposer(PaxosNode server){
+	public Proposer(){
 		state = State.IDLE;
-		this.server = server;
 	}
 	
 	public Proj2Message handleMessage(Proj2Message msg){
 		
 		Proj2Message result = new Proj2Message();
 		switch (msg.command){
-		case LOCK_REQUEST:
+		case LOCK_SERVICE_REQUEST:
 			if(state != State.IDLE){
 				System.err.println("Can not propose new values while "
 						+ "the current paxos instance is still running");
 				return null;
 			}
+			//TODO client will send LocakAction as data right?
 			if(!(msg.data instanceof LockAction)){
-				System.err.println("");
+				System.err.println("Received message data is not an "
+						+ "instance of LocakAction");
 				return null;
 			}
 			
 			//create prepare message
 			result.command = Command.PREPARE;
-			currentProposalNumber = server.nid;
+			currentProposalNumber = PaxosNode.nid;
 			result.clockVal = nextProposalNum(currentProposalNumber);
 			result.data = msg.data;
 			
@@ -57,9 +56,14 @@ public class Proposer implements Serializable{
 			
 			break;
 		case ACCEPTED:
+			if(state != State.ACCEPTING){
+				System.err.println("Proposer is not expecting any accepting message");
+			}
 			break;
 		default:
-				
+			
+			//TODO should not reach this point.
+			System.err.println("Wrong Message type passed into proposer");
 		}
 		return result;
 	}
@@ -70,7 +74,7 @@ public class Proposer implements Serializable{
 	 * should not propose the same proposal number. 
 	 */
 	private int nextProposalNum(int currentProposalNum){
-		return currentProposalNum + server.SERVER_COUNT;
+		return currentProposalNum + PaxosNode.NODE_COUNT;
 	}
 	
 	private void propose(LockAction value){

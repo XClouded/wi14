@@ -14,8 +14,8 @@ public class PaxosState implements Serializable {
 	public Acceptor acceptor;
 	public Learner learner;
 	
-	public PaxosState(PaxosNode server) {
-		proposer = new Proposer(server);
+	public PaxosState() {
+		proposer = new Proposer();
 		acceptor = new Acceptor();
 		learner = new Learner();
 	}

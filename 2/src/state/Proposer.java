@@ -50,6 +50,7 @@ public class Proposer implements Serializable{
 										   currentProposalNumber, 
 										   (LockAction)msg.data);
 			result.to = 0;
+			result.from = PaxosNode.nid;
 			//change proposer state
 			state = State.PREPARING;
 			break;
@@ -82,6 +83,7 @@ public class Proposer implements Serializable{
 				result.command = Command.ACCEPT_REQUEST;
 				result.data = new PaxosMessage(PaxosNode.currentRound, currentProposalNumber, action);
 				result.to = 0;
+				result.from = PaxosNode.nid;
 			}
 			break;
 		case ACCEPTED:

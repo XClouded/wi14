@@ -19,7 +19,9 @@ import java.util.Queue;
 import java.util.TreeMap;
 
 import data.LockAction;
+import data.PaxosMessage;
 import data.Proj2Message;
+import data.Proj2Message.Command;
 import state.PaxosState;
 
 
@@ -70,13 +72,23 @@ public class PaxosNode {
             // increment the local clock
             clock = Math.max(clock, msg.clockVal) + 1;
             
-            PaxosState ps = roundState.get(currentRound);//TODO should replace this with the 
+            if (msg.command == Command.LOCK_SERVICE_REQUEST){
+            	//update the queue
+            } else {
+            	//Check the learner to see if the value has already been learned. 
+            }
+            PaxosState ps = roundState.get(currentRound);//TODO should replace this with the correct round info
             Proj2Message respMsg = null;
             //TODO handle each request based on the command
             switch(msg.command) {
             
 	            case PREPARE:
 	            case ACCEPT_REQUEST:
+	        		if (!(msg.data instanceof PaxosMessage)){
+	        			System.err.println("Acceptor: Received message data is not an "
+	        					+ "instance of PaxosMessage");
+	        			break;
+	        		}
 		            ps.acceptor.handleMessage(msg);
 		            break;
 	            case LOCK_SERVICE_REQUEST:

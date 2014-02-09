@@ -3,7 +3,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.Map;
+import java.util.TreeMap;
 
 import data.Proj2Message;
 
@@ -17,11 +19,16 @@ import state.PaxosState;
 public class PaxosNode {
 	private static final int[] PAXOS_MEMBERS = {9002, 9003, 9004, 9005, 9006};
 	
+	// make the private variables static, should be one PaxosNode per process
+	private static Map<Integer, PaxosState> roundState;
+	private static int currentRound, clock, nid; 
+	private static ServerSocket welcomeSocket;
+	
 	public static void main(String[] args) throws IOException {
-		Map<Integer, PaxosState> roundState;
-		int currentRound = 0; // for multi-paxos
-		int clock = 0; // for proposal #'s
-		int nid = 0;
+		roundState = new TreeMap<Integer, PaxosState>();
+		currentRound = 0; // for multi-paxos
+		clock = 0; // for proposal #'s
+		nid = 0;
 		
 		if (args.length < 1) {
 			System.out.println("Must specify port to listen on");
@@ -36,22 +43,13 @@ public class PaxosNode {
 			System.exit(1);
 		}
 		
-		ServerSocket welcomeSocket = new ServerSocket(nid);
+		welcomeSocket = new ServerSocket(nid);
 		
+		System.out.println("PaxosNode started! Listening on port "+nid);
+		
+		// keep receiving messages
 		while(true){
-			Socket connectionSocket = welcomeSocket.accept();
-			ObjectInputStream inFromClient = new ObjectInputStream(connectionSocket.getInputStream());
-			Proj2Message msg = null;
-			
-			try {
-				msg = (Proj2Message)inFromClient.readObject();
-			} catch (ClassNotFoundException e) {
-				System.err.println("Class not found exception, failed to cast message");
-			}
-			
-			// close the incoming connection
-            inFromClient.close();
-            connectionSocket.close();
+			Proj2Message msg = receiveMessage();
             
             // increment the local clock
             clock = Math.max(clock, msg.clockVal) + 1;
@@ -68,13 +66,35 @@ public class PaxosNode {
             resp.from = nid;
             resp.command = Proj2Message.Command.LOCK_RESPONSE;
             
-            Socket sckToClient = new Socket("localhost", msg.from);
-            ObjectOutputStream outToClient = new ObjectOutputStream(sckToClient.getOutputStream());
-            
-            outToClient.writeObject(resp);
-            
-            outToClient.close();
-            sckToClient.close();
+            sendMessage(resp, msg.from);
 		}
+	}
+	
+	public static Proj2Message receiveMessage() throws IOException {
+		Socket connectionSocket = welcomeSocket.accept();
+		ObjectInputStream inFromClient = new ObjectInputStream(connectionSocket.getInputStream());
+		Proj2Message msg = null;
+		
+		try {
+			msg = (Proj2Message)inFromClient.readObject();
+		} catch (ClassNotFoundException e) {
+			System.err.println("Class not found exception, failed to cast message");
+		}
+		
+		// close the incoming connection
+        inFromClient.close();
+        connectionSocket.close();
+        
+        return msg;
+	}
+	
+	public static void sendMessage(Proj2Message msg, int to) throws UnknownHostException, IOException {
+		Socket sckToClient = new Socket("localhost", to);
+        ObjectOutputStream outToClient = new ObjectOutputStream(sckToClient.getOutputStream());
+        
+        outToClient.writeObject(msg);
+        
+        outToClient.close();
+        sckToClient.close();
 	}
 }

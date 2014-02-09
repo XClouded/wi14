@@ -1,8 +1,16 @@
 package Host;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInput;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.net.ConnectException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -27,15 +35,17 @@ public class PaxosNode {
 	// make the private variables static, should be one PaxosNode per process
 	private static TreeMap<Integer, PaxosState> roundState;
 	public static int currentRound, clock, nid; 
-	private static ServerSocket welcomeSocket;
+	private static DatagramSocket msgSocket;
+	private static InetAddress IPAddress;
 	public static Queue<LockAction> requests;
-
+	
 	public static void main(String[] args) throws IOException {
 		roundState = new TreeMap<Integer, PaxosState>();
 		currentRound = 0; // for multi-paxos
 		clock = 0; // for proposal #'s
 		nid = 0;
-
+		IPAddress = InetAddress.getByName("localhost");
+		
 		if (args.length < 1) {
 			System.out.println("Must specify port to listen on");
 			System.out.println("e.g. 'PaxosNode 9001'");
@@ -48,9 +58,9 @@ public class PaxosNode {
 			System.out.println("Unable to parse port: "+args[0]);
 			System.exit(1);
 		}
-
-		welcomeSocket = new ServerSocket(nid);
-
+		
+		msgSocket = new DatagramSocket(nid);
+		
 		System.out.println("PaxosNode started! Listening on port "+nid);
 
 		// keep receiving messages
@@ -99,44 +109,86 @@ public class PaxosNode {
             sendMessage(resp, msg.from);
 		}
 	}
+	
+	/**
+	 * Receive a Proj2Message on msgSocket
+	 * @return the received Proj2Message
+	 * @throws IOException
+	 */
+	private static Proj2Message receiveMessage() throws IOException {
+		byte[] receiveData = new byte[1024];
+		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+		msgSocket.receive(receivePacket);
 
-	public static Proj2Message receiveMessage() throws IOException {
-		Socket connectionSocket = welcomeSocket.accept();
-		ObjectInputStream inFromClient = new ObjectInputStream(connectionSocket.getInputStream());
 		Proj2Message msg = null;
-		
+		ByteArrayInputStream bis = new ByteArrayInputStream(receiveData);
+		ObjectInput in = null;
 		try {
-			msg = (Proj2Message)inFromClient.readObject();
+			// convert the bytes back to a msg
+			in = new ObjectInputStream(bis);
+			Object o = in.readObject();
+			msg = (Proj2Message)o;
 		} catch (ClassNotFoundException e) {
 			System.err.println("Class not found exception, failed to cast message");
+		} finally {
+			try {
+				bis.close();
+			} catch (IOException ex) {
+				// ignore close exception
+			}
+			try {
+				if (in != null) {
+					in.close();
+				}
+			} catch (IOException ex) {
+				// ignore close exception
+			}
 		}
 
-		// close the incoming connection
-        inFromClient.close();
-        connectionSocket.close();
-        
-        return msg;
+		return msg;
 	}
 
-	public static void sendMessage(Proj2Message msg, int to) throws UnknownHostException, IOException {
-		Socket sckToClient = new Socket("localhost", to);
-        ObjectOutputStream outToClient = new ObjectOutputStream(sckToClient.getOutputStream());
-        
-        outToClient.writeObject(msg);
-        
-        outToClient.close();
-        sckToClient.close();
-	}
+	/**
+	 * Send a Proj2Message to the specified node on msgSocket
+	 * @param msg the Proj2Message to send
+	 * @param to the node to send it to
+	 * @throws IOException
+	 */
+	private static void sendMessage(Proj2Message msg, int to) throws IOException {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutput out = null;
+		try {
+			// convert msg to bytes
+			out = new ObjectOutputStream(bos);   
+			out.writeObject(msg);
+			byte[] bytes = bos.toByteArray();
 
-	public static void sendToAllOtherPaxos(Proj2Message msg) throws UnknownHostException, IOException {
-		for(int node : PAXOS_MEMBERS) {
-			if (node != nid) {
-				try {
-					sendMessage(msg, node);
-				} catch (ConnectException e) {
-					// could not connect
-					// node is down, ignore
+			// send the message
+			DatagramPacket sendPacket = new DatagramPacket(bytes, bytes.length, IPAddress, to);
+			msgSocket.send(sendPacket);
+		} finally {
+			try {
+				if (out != null) {
+					out.close();
 				}
+			} catch (IOException ex) {
+				// ignore close exception
+			}
+			try {
+				bos.close();
+			} catch (IOException ex) {
+				// ignore close exception
+			}
+		}
+	}
+	
+	public static void sendToAllPaxos(Proj2Message msg) throws UnknownHostException, IOException {
+		for(int node : PAXOS_MEMBERS) {
+			try {
+				sendMessage(msg, node);
+			} catch (ConnectException e) {
+				// could not connect
+				// node is down, ignore
 			}
 		}
 	}

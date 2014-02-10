@@ -65,12 +65,22 @@ public class PaxosNode extends Proj2Node{
 					resp.command = Command.LOCK_SERVICE_RESPONSE;
 					resp.data = la;
 					sendMessage(resp, msg.from);
-					
+
 					// and wait for more requests
 					continue;
 				} else {
 					requests.add(la);
-					
+
+					if(roundState.isEmpty() 
+							|| (roundState.get(currentRound).learner.learnedValue != null && canBeExecuted(la))) {
+						// ready to execute request
+						// increment the current round and go into the switch statement
+						currentRound++;
+						round = currentRound;
+					} else {
+						// not ready to execute the request yet!
+						continue;
+					}
 				}
 			} else {
 				// msg is from other server
@@ -85,62 +95,62 @@ public class PaxosNode extends Proj2Node{
 				//                	resp.command = Command.LEARN;
 				//            	}
 			}
+
 			ps = roundState.get(round);
 			if(ps == null) {
 				ps = new PaxosState();
 				roundState.put(round, ps);
 			} 
 
-			//TODO handle each request based on the command
 			switch(msg.command) {
 
 			case PREPARE:
-            case ACCEPT_REQUEST:
-        		if (!(msg.data instanceof PaxosMessage)){
-        			System.err.println("Acceptor: Received message data is not an "
-        					+ "instance of PaxosMessage");
-        			break;
-        		}
-	            List<Proj2Message> respMsgs = ps.acceptor.handleMessage(msg);
-	            if(respMsgs == null){
-                	//error, ignore
-                }else{
-                	for(Proj2Message respMsg : respMsgs){
-	                	sendMessage(respMsg, respMsg.to);
-                	}
-                }
-	            break;
-            case LOCK_SERVICE_REQUEST:
-            	//TODO 
-            case PROMISE:
-            case ACCEPTED:
-            	Proj2Message respMsg = ps.proposer.handleMessage(msg);
-                if(respMsg == null){
-                	//error, ignore
-                }else{
-                	
-                	//send response message
-                	sendMessage(respMsg, respMsg.to);
-                }
-            	break;
-            case LEARN:
-            	Proj2Message learnerMsg = ps.learner.handleMessage(msg);
-            	if(learnerMsg == null){
-                	//there are three cases:
-            		//1. nothing learned. 
-            		//2. there is already a learned value
-            		//3. msg data is not an instace of PaxosMessage
-                }else{
-                	LockAction la = ps.learner.learnedValue;
-                	if (la != null){
-                		valueLearned(la);
-                	}
-                	//send response message
-                	sendMessage(learnerMsg, learnerMsg.to);
-                }
-            	break;
-        	default:
-        		System.out.println("Paxos got message: " + msg);
+			case ACCEPT_REQUEST:
+				if (!(msg.data instanceof PaxosMessage)){
+					System.err.println("Acceptor: Received message data is not an "
+							+ "instance of PaxosMessage");
+					break;
+				}
+				List<Proj2Message> respMsgs = ps.acceptor.handleMessage(msg);
+				if(respMsgs == null){
+					//error, ignore
+				}else{
+					for(Proj2Message respMsg : respMsgs){
+						sendMessage(respMsg, respMsg.to);
+					}
+				}
+				break;
+			case LOCK_SERVICE_REQUEST:
+				//TODO 
+			case PROMISE:
+			case ACCEPTED:
+				Proj2Message respMsg = ps.proposer.handleMessage(msg);
+				if(respMsg == null){
+					//error, ignore
+				}else{
+
+					//send response message
+					sendMessage(respMsg, respMsg.to);
+				}
+				break;
+			case LEARN:
+				Proj2Message learnerMsg = ps.learner.handleMessage(msg);
+				if(learnerMsg == null){
+					//there are three cases:
+					//1. nothing learned. 
+					//2. there is already a learned value
+					//3. msg data is not an instace of PaxosMessage
+				}else{
+					LockAction la = ps.learner.learnedValue;
+					if (la != null){
+						valueLearned(la);
+					}
+					//send response message
+					sendMessage(learnerMsg, learnerMsg.to);
+				}
+				break;
+			default:
+				System.out.println("Paxos got message: " + msg);
 			}
 
 			// TODO remove test code
@@ -152,7 +162,7 @@ public class PaxosNode extends Proj2Node{
 			sendMessage(resp, msg.from);
 		}
 	}
-	
+
 	/*
 	 * @param to the destination port. If set to 0, broadcast.
 	 */
@@ -193,7 +203,7 @@ public class PaxosNode extends Proj2Node{
 					&& heldLocks.get(la.lockName) == la.client;
 		}
 	}
-	
+
 	/**
 	 * This is called by learner when the learner learned something.
 	 * @param action The value being learned

@@ -53,7 +53,7 @@ public class PaxosNode extends Proj2Node{
 			clock = Math.max(clock, msg.clockVal) + 1;
 			PaxosState ps = null;
 			int round = 0;
-
+			System.out.println("command: " + msg.command);
 			if (msg.command == Command.LOCK_SERVICE_REQUEST) {
 				// msg is client request
 				//update the queue

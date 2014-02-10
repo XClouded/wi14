@@ -1,10 +1,11 @@
 package state;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
+
 import Host.PaxosNode;
 import Host.Proj2Node;
-
 import data.LockAction;
 import data.PaxosMessage;
 import data.Proj2Message;
@@ -24,6 +25,7 @@ public class Proposer implements Serializable{
 	
 	public Proposer(){
 		state = State.IDLE;
+		promisesReceived = new HashMap<Integer, PaxosMessage>();
 	}
 	
 	public Proj2Message handleMessage(Proj2Message msg){

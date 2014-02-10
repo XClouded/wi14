@@ -53,6 +53,7 @@ public class Learner implements Serializable{
 						//notify client
 						resp = new Proj2Message();
 						resp.command = Command.LOCK_SERVICE_RESPONSE;
+						System.out.println("PM: value: " + pm.value);
 						resp.data = pm.value;
 						resp.from = PaxosNode.nid;
 						resp.to = pm.value.client;

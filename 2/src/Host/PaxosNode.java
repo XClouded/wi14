@@ -41,14 +41,13 @@ public class PaxosNode extends Proj2Node{
 		requests = new LinkedList<LockAction>();
 	}
 
-	public void run() throws IOException {	
+	public void run() throws IOException {
 		msgSocket = new DatagramSocket(nid);
 		System.out.println("PaxosNode started! Listening on port "+nid);
 
 		// keep receiving messages
 		while(true){
 			Proj2Message msg = receiveMessage();
-
 			// increment the local clock
 			clock = Math.max(clock, msg.clockVal) + 1;
 			PaxosState ps = null;
@@ -158,10 +157,10 @@ public class PaxosNode extends Proj2Node{
 	}
 
 	/*
-	 * @param to the destination port. If set to 0, broadcast.
+	 * @param to the destination port. If set to -1, broadcast.
 	 */
 	protected void sendMessage(Proj2Message msg, int to) throws IOException{
-		if(to == 0){
+		if(to == -1){
 			for(int node : PAXOS_MEMBERS) {
 				sendMessage(msg, node);
 			}

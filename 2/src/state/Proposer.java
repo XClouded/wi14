@@ -30,9 +30,10 @@ public class Proposer implements Serializable{
 	
 	public Proj2Message handleMessage(Proj2Message msg){
 		
-		Proj2Message result = new Proj2Message();
+		Proj2Message result = null;
 		switch (msg.command){
 		case LOCK_SERVICE_REQUEST:
+			result = new Proj2Message();
 			if(state != State.IDLE){
 				System.err.println("Can not propose new values while "
 						+ "the current paxos instance is still running");
@@ -51,12 +52,13 @@ public class Proposer implements Serializable{
 			result.data = new PaxosMessage(PaxosNode.currentRound, 
 										   currentProposalNumber, 
 										   (LockAction)msg.data);
-			result.to = 0;
+			result.to = -1;
 			result.from = PaxosNode.nid;
 			//change proposer state
 			state = State.PREPARING;
 			break;
 		case PROMISE:
+			
 			if(state != State.PREPARING){
 				System.err.println("Proposer is not asking for promise now. Ignore");
 				return null;
@@ -79,12 +81,13 @@ public class Proposer implements Serializable{
 				}
 				if(action == null){
 					//no proposals from acceptors
-					action = PaxosNode.requests.poll();
+					action = PaxosNode.requests.peek();
 				}
 				currentProposalNumber = nextProposalNum(currentProposalNumber);
+				result = new Proj2Message();
 				result.command = Command.ACCEPT_REQUEST;
 				result.data = new PaxosMessage(PaxosNode.currentRound, currentProposalNumber, action);
-				result.to = 0;
+				result.to = -1;
 				result.from = PaxosNode.nid;
 			}
 			break;

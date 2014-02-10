@@ -21,7 +21,7 @@ public class PaxosMessage implements Serializable{
 	}
 	
 	public int hashCode(){
-		return paxosRound + proposalNum + value.hashCode();
+		return paxosRound + proposalNum + (value != null? value.hashCode() : 0);
 	}
 	
 	public boolean equals(Object o){

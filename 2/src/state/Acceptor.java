@@ -47,12 +47,12 @@ public class Acceptor implements Serializable{
         		toProposer.data = pmReceived;
         		highestNumProposal = pmReceived;
         		
-        		Proj2Message toAcceptor = new Proj2Message();
-        		toAcceptor.command = Command.LEARN;
-        		toAcceptor.data = pmReceived;
-        		toAcceptor.from = PaxosNode.nid;
-        		toAcceptor.to = 0; //to broadcast to all acceptors.
-        		results.add(toAcceptor);
+        		Proj2Message toLearnner = new Proj2Message();
+        		toLearnner.command = Command.LEARN;
+        		toLearnner.data = pmReceived;
+        		toLearnner.from = PaxosNode.nid;
+        		toLearnner.to = -1; //to broadcast to all acceptors.
+        		results.add(toLearnner);
         	}
         	toProposer.to = msg.from;
         	toProposer.from = PaxosNode.nid;

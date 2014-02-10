@@ -1,6 +1,5 @@
 package Host;
 
-
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.SocketException;
@@ -72,11 +71,7 @@ public class PaxosNode extends Proj2Node{
 	                	//error, ignore
 	                }else{
 	                	for(Proj2Message respMsg : respMsgs){
-	    	                if (respMsg.to == 0){
-	    	                	sendToAllPaxos(respMsg);
-	    	                }else{
-	    	                	sendMessage(respMsg, respMsg.to);
-	    	                }
+    	                	sendMessage(respMsg, respMsg.to);
 	                	}
 	                }
 		            break;
@@ -87,23 +82,25 @@ public class PaxosNode extends Proj2Node{
 	            	Proj2Message respMsg = ps.proposer.handleMessage(msg);
 	                if(respMsg == null){
 	                	//error, ignore
-	                }
-	                //send response message
-	                if (respMsg.to == 0){
-	                	sendToAllPaxos(respMsg);
 	                }else{
+	                	
+	                	//send response message
 	                	sendMessage(respMsg, respMsg.to);
 	                }
 	            	break;
 	            case LEARN:
 	            	Proj2Message learnerMsg = ps.learner.handleMessage(msg);
 	            	if(learnerMsg == null){
-	                	//error, ignore
-	                }
-	                //send response message
-	                if (learnerMsg.to == 0){
-	                	sendToAllPaxos(learnerMsg);
+	                	//there are three cases:
+	            		//1. nothing learned. 
+	            		//2. there is already a learned value
+	            		//3. msg data is not an instace of PaxosMessage
 	                }else{
+	                	LockAction la = ps.learner.learnedValue;
+	                	if (la != null){
+	                		valueLearned(la);
+	                	}
+	                	//send response message
 	                	sendMessage(learnerMsg, learnerMsg.to);
 	                }
 	            	break;
@@ -121,12 +118,19 @@ public class PaxosNode extends Proj2Node{
 		}
 	}
 	
-	private void sendToAllPaxos(Proj2Message msg) throws UnknownHostException, IOException {
-		for(int node : PAXOS_MEMBERS) {
-			sendMessage(msg, node);
+	/*
+	 * @param to the destination port. If set to 0, broadcast.
+	 */
+	protected void sendMessage(Proj2Message msg, int to) throws IOException{
+		if(to == 0){
+			for(int node : PAXOS_MEMBERS) {
+				sendMessage(msg, node);
+			}
+		}else{
+			super.sendMessage(msg, to);
 		}
 	}
-	
+		
 	/**
 	 * This is called by learner when the learner learned something.
 	 * @param action The value being learned

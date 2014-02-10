@@ -69,7 +69,7 @@ public abstract class Proj2Node {
 	 * @param to the node to send it to
 	 * @throws IOException
 	 */
-	void sendMessage(Proj2Message msg, int to) throws IOException {
+	protected void sendMessage(Proj2Message msg, int to) throws IOException {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		ObjectOutput out = null;
 		try {

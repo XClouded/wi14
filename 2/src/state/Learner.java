@@ -20,6 +20,12 @@ public class Learner implements Serializable{
 		nidToValue = new HashMap<Integer, LockAction>();
 	}
 	
+	/**
+	 * 
+	 * @param msg
+	 * @return message that is needed to sent. Null if there is already a learned 
+	 * value of the message body is not an instance of PaxosMessage
+	 */
 	public Proj2Message handleMessage(Proj2Message msg){
 		Proj2Message resp = null;
 		switch(msg.command) {
@@ -43,9 +49,6 @@ public class Learner implements Serializable{
 					}
 					if(actionVote.get(la) >= PaxosNode.MAJORITY_SIZE){ //value learned
 						learnedValue = la;
-						//TODO
-						//tell server to update the queue
-						PaxosNode.valueLearned(learnedValue);
 						
 						//notify client
 						resp = new Proj2Message();

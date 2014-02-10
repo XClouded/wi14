@@ -96,7 +96,16 @@ public class PaxosNode extends Proj2Node{
 	                }
 	            	break;
 	            case LEARN:
-	            	ps.learner.handleMessage(msg);
+	            	Proj2Message learnerMsg = ps.learner.handleMessage(msg);
+	            	if(learnerMsg == null){
+	                	//error, ignore
+	                }
+	                //send response message
+	                if (learnerMsg.to == 0){
+	                	sendToAllPaxos(learnerMsg);
+	                }else{
+	                	sendMessage(learnerMsg, learnerMsg.to);
+	                }
 	            	break;
             	default:
             		System.out.println("Paxos got message: " + msg);
@@ -116,5 +125,16 @@ public class PaxosNode extends Proj2Node{
 		for(int node : PAXOS_MEMBERS) {
 			sendMessage(msg, node);
 		}
+	}
+	
+	/**
+	 * This is called by learner when the learner learned something.
+	 * @param action The value being learned
+	 */
+	public static void valueLearned(LockAction action){
+		//TODO check if the learned value is from the top of the task queue
+		// This means this value is proposed by the proposer in this server.
+		
+		//TODO propose the next value in the task queue. 
 	}
 }

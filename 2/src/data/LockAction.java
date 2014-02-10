@@ -8,6 +8,10 @@ public class LockAction implements Serializable{
 	public String lockName;
 	public int client;
 	
+	public int hashCode(){
+		return lockName.hashCode() + client + (lock ? 1 : 0);
+	}
+	
 	public boolean equals(Object o) {
 		if (o == null || o.getClass() != this.getClass()) {
 			return false;
@@ -18,8 +22,8 @@ public class LockAction implements Serializable{
 		boolean equal = 
 				lock == other.lock
 				&& client == other.client
-				&& (lockName == null && other.lockName == null)
-				&& lockName.equals(other.lockName);
+				&& ((lockName == null && other.lockName == null)
+				|| lockName.equals(other.lockName));
 
 		return equal;
 	}

@@ -27,4 +27,8 @@ public class LockAction implements Serializable{
 
 		return equal;
 	}
+	
+	public String toString(){
+		return "" + client + " wants to " + (lock ? "lock" : "unlock") + " " + lockName;
+	}
 }

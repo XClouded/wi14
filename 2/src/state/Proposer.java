@@ -22,6 +22,7 @@ public class Proposer implements Serializable{
 	private State state;
 	private int currentProposalNumber;
 	private Map<Integer, PaxosMessage> promisesReceived; //nid to promise
+	private Proj2Message originalPropose;
 	
 	public Proposer(){
 		state = State.IDLE;
@@ -45,7 +46,7 @@ public class Proposer implements Serializable{
 						+ "instance of LocakAction");
 				return null;
 			}
-			
+			originalPropose = msg;
 			//create prepare message
 			result.command = Command.PREPARE;
 			currentProposalNumber = nextProposalNum(PaxosNode.nid);
@@ -82,7 +83,7 @@ public class Proposer implements Serializable{
 				if(action == null){
 					System.out.println("requests size: " + PaxosNode.requests.size());
 					//no proposals from acceptors
-					action = (LockAction)PaxosNode.requests.peek().data;
+					action = (LockAction) originalPropose.data;
 				}
 				currentProposalNumber = nextProposalNum(currentProposalNumber);
 				result = new Proj2Message();

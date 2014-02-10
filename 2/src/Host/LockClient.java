@@ -39,14 +39,14 @@ public class LockClient extends Proj2Node{
 
 			String[] commandSplit = command.split("\\s+");
 			if (command == null || command.length() == 0) {
-				System.out.println("Please enter a command.");
+				System.out.println("Please enter a command. Eg. lock a");
 			} else if (EXIT.equalsIgnoreCase(command)) {
 				// if the command is to exit, exit!
 				break;
 			} else if (LOCK.equalsIgnoreCase(commandSplit[0])) {
 				// send a lock request
 				if (commandSplit.length < 2) {
-					// need to specify what to lock!
+					// need to specify what to lock on which port
 					System.out.println("Must specify which lock to lock, e.g. 'lock a'");
 				} else {
 					// construct and send the lock request
@@ -60,9 +60,24 @@ public class LockClient extends Proj2Node{
 					req.from = port;
 					req.command = Proj2Message.Command.LOCK_SERVICE_REQUEST;
 					req.data = action;
+					int destPort = PAXOS_MEMBERS[0];
+					try{
+						if (commandSplit.length > 2){
+							destPort = Integer.parseInt(commandSplit[2]);
+							if(destPort < 9002 || destPort > 9006){
+								System.out.println("dest port number should lay "
+										+ "between 9002 and 9006");
+								continue;
+							}
 
+						}
+					} catch (NumberFormatException e){
+						System.out.println("Specified port is not a number");
+						continue;
+					}
+					
 					System.out.println("Sending lock request for "+commandSplit[1]);
-					sendMessage(req, PAXOS_MEMBERS[0]);
+					sendMessage(req, destPort);
 
 					receiveConfirmation(action);
 				}
@@ -81,9 +96,23 @@ public class LockClient extends Proj2Node{
 					req.from = port;
 					req.command = Proj2Message.Command.LOCK_SERVICE_REQUEST;
 					req.data = action;
+					int destPort = PAXOS_MEMBERS[0];
+					try{
+						if (commandSplit.length > 2){
+							destPort = Integer.parseInt(commandSplit[2]);
+							if(destPort < 9002 || destPort > 9006){
+								System.out.println("dest port number should lay "
+										+ "between 9002 and 9006");
+								continue;
+							}
 
+						}
+					} catch (NumberFormatException e){
+						System.out.println("Specified server port is not a number");
+						continue;
+					}
 					System.out.println("Sending unlock request for "+commandSplit[1]);
-					sendMessage(req, PAXOS_MEMBERS[0]);
+					sendMessage(req, destPort);
 					receiveConfirmation(action);
 				}
 			} else {

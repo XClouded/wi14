@@ -54,6 +54,7 @@ public class PaxosNode extends Proj2Node{
 			int round = 0;
 			System.out.println("command: " + msg.command);
 			if (msg.command == Command.LOCK_SERVICE_REQUEST) {
+//				System.out.println("requests queue size " + requests.size());
 				// msg is client request
 				//update the queue
 				LockAction la = (LockAction)msg.data;
@@ -72,7 +73,7 @@ public class PaxosNode extends Proj2Node{
 				} else {
 					requests.add(msg);
 
-					if(roundState.isEmpty() 
+					if(roundState.isEmpty() || roundState.get(currentRound) == null 
 							|| (roundState.get(currentRound).learner.learnedValue != null && canBeExecuted(la))) {
 						// ready to execute request
 						// increment the current round and go into the switch statement
@@ -203,6 +204,7 @@ public class PaxosNode extends Proj2Node{
 	 * @throws IOException 
 	 */
 	public void valueLearned(LockAction action) throws IOException{
+		System.out.println("value learned: " + action.toString());
 		boolean missionCompleted = false; //the task can be performed. 
 		if(action.lock && 
 				(!heldLocks.containsKey(action.lockName) || heldLocks.get(action.lockName) == action.client)){
@@ -215,20 +217,27 @@ public class PaxosNode extends Proj2Node{
 			heldLocks.remove(action.lockName);
 		}else {
 			//add the task back to the end of the queue if the action belongs to this server
-			if (requests.size() > 0 && 
-					((LockAction)requests.peek().data).equals(action)) {
-				requests.add(requests.poll());
-			}
+//			if (requests.size() > 0 && 
+//					((LockAction)requests.peek().data).equals(action)) {
+//				requests.add(requests.poll());
+//			}
+			assert(false);
 		}
 		
 		if(missionCompleted){
-			// TODO check if the learned value is from the top of the task queue
+			// TODO check if the learned value is from the task queue
 			// This means this value is proposed by the proposer in this server.
-			if (requests.size() > 0 && 
-					((LockAction)requests.peek().data).equals(action)) {
-				requests.poll();
-			}
+			// remove this action if exists
 			int size = requests.size();
+			for(int i = 0; i < size; i++){
+				Proj2Message msg = requests.poll();
+				if(((LockAction)msg.data).client == action.client){
+					break;
+				}else{
+					requests.add(msg);
+				}
+			}
+			size = requests.size();
 			// propose the next value in the task queue. 
 			for(int i = 0; i < size; i++){
 				if (canBeExecuted((LockAction) requests.peek().data)){

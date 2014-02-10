@@ -1,4 +1,5 @@
 Jake Sanders 0728906 jacobs22@u.washington.edu
+Pingyang He 0929017 pingyh@uw.edu
 
 Design:
 	The state of all of the locks, the queue of pending lock requests, and the proposer, acceptor, and learner state machines for all instances of paxos are contained in the PaxosNodes. 

@@ -17,7 +17,7 @@ public class Proj2Message implements Serializable{
 	}
 	
 	public int clockVal, from;
-	public int to; // 0 means broadcast 
+	public int to; // -1 means broadcast 
 	public Command command;
 	public Serializable data;
 	

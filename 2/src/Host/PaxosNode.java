@@ -122,7 +122,6 @@ public class PaxosNode extends Proj2Node{
 				}
 				break;
 			case LOCK_SERVICE_REQUEST:
-				//TODO 
 			case PROMISE:
 			case ACCEPTED:
 				Proj2Message respMsg = ps.proposer.handleMessage(msg);
@@ -202,9 +201,12 @@ public class PaxosNode extends Proj2Node{
 	 * @param action The value being learned
 	 */
 	public static void valueLearned(LockAction action){
-		//TODO check if the learned value is from the top of the task queue
+		// TODO check if the learned value is from the top of the task queue
 		// This means this value is proposed by the proposer in this server.
-
-		//TODO propose the next value in the task queue. 
+		if (requests.contains(action)) {
+			requests.remove(action);
+		}
+		
+		// TODO propose the next value in the task queue. 
 	}
 }

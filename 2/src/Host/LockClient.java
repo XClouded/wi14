@@ -33,6 +33,7 @@ public class LockClient extends Proj2Node{
 		String command = null;
 		System.out.println("Client started!");
 		while (true) {
+			clock ++;
 			// receive the command from the command line
 			System.out.print("Command: ");
 			command = br.readLine();
@@ -54,6 +55,7 @@ public class LockClient extends Proj2Node{
 					action.lock = true;
 					action.client = port;
 					action.lockName = commandSplit[1];
+					action.uid = clock;
 
 					Proj2Message req = new Proj2Message();
 					req.clockVal = clock;
@@ -90,6 +92,7 @@ public class LockClient extends Proj2Node{
 					action.lock = false;
 					action.client = port;
 					action.lockName = commandSplit[1];
+					action.uid = clock;
 
 					Proj2Message req = new Proj2Message();
 					req.clockVal = clock;
@@ -105,7 +108,6 @@ public class LockClient extends Proj2Node{
 										+ "between 9002 and 9006");
 								continue;
 							}
-
 						}
 					} catch (NumberFormatException e){
 						System.out.println("Specified server port is not a number");

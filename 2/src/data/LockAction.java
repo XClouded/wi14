@@ -7,9 +7,10 @@ public class LockAction implements Serializable{
 	public boolean lock;
 	public String lockName;
 	public int client;
+	public int uid;
 	
 	public int hashCode(){
-		return lockName.hashCode() + client + (lock ? 1 : 0);
+		return lockName.hashCode() + client + (lock ? 1 : 0) + uid;
 	}
 	
 	public boolean equals(Object o) {
@@ -23,12 +24,13 @@ public class LockAction implements Serializable{
 				lock == other.lock
 				&& client == other.client
 				&& ((lockName == null && other.lockName == null)
-				|| lockName.equals(other.lockName));
+				|| lockName.equals(other.lockName))
+				&& uid == other.uid;
 
 		return equal;
 	}
 	
 	public String toString(){
-		return "" + client + " wants to " + (lock ? "lock" : "unlock") + " " + lockName;
+		return "" + client + " wants to " + (lock ? "lock" : "unlock") + " " + lockName + " uid: " + uid;
 	}
 }

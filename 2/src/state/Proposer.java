@@ -85,6 +85,7 @@ public class Proposer implements Serializable{
 					//no proposals from acceptors
 					action = (LockAction) originalPropose.data;
 				}
+				System.out.println("accept this!!!: " + action);
 				currentProposalNumber = nextProposalNum(currentProposalNumber);
 				result = new Proj2Message();
 				result.command = Command.ACCEPT_REQUEST;

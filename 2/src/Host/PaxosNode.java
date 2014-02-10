@@ -54,7 +54,7 @@ public class PaxosNode extends Proj2Node{
 			int round = 0;
 			System.out.println("command: " + msg.command);
 			if (msg.command == Command.LOCK_SERVICE_REQUEST) {
-//				System.out.println("requests queue size " + requests.size());
+				System.out.println("requests queue size " + requests.size());
 				// msg is client request
 				//update the queue
 				LockAction la = (LockAction)msg.data;
@@ -71,12 +71,14 @@ public class PaxosNode extends Proj2Node{
 					// and wait for more requests
 					continue;
 				} else {
+					System.out.println("action: " + la.toString());
 					requests.add(msg);
 
 					if(roundState.isEmpty() || roundState.get(currentRound) == null 
 							|| (roundState.get(currentRound).learner.learnedValue != null && canBeExecuted(la))) {
 						// ready to execute request
 						// increment the current round and go into the switch statement
+						System.out.println("new round");
 						currentRound++;
 						round = currentRound;
 					} else {
@@ -135,6 +137,7 @@ public class PaxosNode extends Proj2Node{
 				}
 				break;
 			case LEARN:
+				System.out.println("learn this: " + ((PaxosMessage)msg.data).value.toString());
 				Proj2Message learnerMsg = ps.learner.handleMessage(msg);
 				if(learnerMsg == null){
 					//there are three cases:
@@ -211,7 +214,7 @@ public class PaxosNode extends Proj2Node{
 			missionCompleted = true;
 			//put the lock
 			heldLocks.put(action.lockName, action.client);
-		}else if(!action.lock && heldLocks.get(action.lockName) == action.client){
+		}else if(!(action.lock) && heldLocks.get(action.lockName) == action.client){
 			missionCompleted = true;
 			//unlock
 			heldLocks.remove(action.lockName);

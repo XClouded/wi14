@@ -89,20 +89,6 @@ public class LockClient extends Proj2Node{
 			} else {
 				System.out.println("Unknown command: " + commandSplit[0]);
 			}
-
-			/*
-			// send a test message to the paxos node at 9002
-			// TODO remove test code
-	        Proj2Message req = new Proj2Message();
-	        req.clockVal = clock;
-	        req.from = port;
-	        req.command = Proj2Message.Command.LOCK_SERVICE_REQUEST;
-
-			sendMessage(req, 9002);
-
-			// wait for a response from a learner
-			Proj2Message msg = receiveMessage();
-			System.out.println("Got message as client: " + msg);*/
 		}
 
 		msgSocket.close();

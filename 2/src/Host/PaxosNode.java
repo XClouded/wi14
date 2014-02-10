@@ -5,6 +5,7 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -37,6 +38,7 @@ public class PaxosNode extends Proj2Node{
 		clock = 0; // for proposal #'s
 		nid = nodeId;
 		heldLocks = new HashMap<String, Integer>();
+		requests = new LinkedList<LockAction>();
 	}
 
 	public void run() throws IOException {	
@@ -152,14 +154,6 @@ public class PaxosNode extends Proj2Node{
 			default:
 				System.out.println("Paxos got message: " + msg);
 			}
-
-			// TODO remove test code
-			Proj2Message resp = new Proj2Message();
-			resp.clockVal = clock;
-			resp.from = nid;
-			resp.command = Proj2Message.Command.LOCK_SERVICE_RESPONSE;
-
-			sendMessage(resp, msg.from);
 		}
 	}
 

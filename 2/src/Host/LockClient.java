@@ -61,7 +61,7 @@ public class LockClient extends Proj2Node{
 					req.command = Proj2Message.Command.LOCK_SERVICE_REQUEST;
 					req.data = action;
 
-					System.out.println("Sending unlock request for "+commandSplit[1]);
+					System.out.println("Sending lock request for "+commandSplit[1]);
 					sendMessage(req, PAXOS_MEMBERS[0]);
 
 					receiveConfirmation(action);

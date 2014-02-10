@@ -28,7 +28,7 @@ public class PaxosNode extends Proj2Node{
 	// static, because we assume one PaxosNode per process
 	public static int currentRound;
 	public static int nid, clock; 
-	public static Queue<LockAction> requests;
+	public static Queue<Proj2Message> requests;
 	private static Map<String, Integer> heldLocks;
 
 	public PaxosNode(int nodeId) throws UnknownHostException, SocketException {
@@ -38,7 +38,7 @@ public class PaxosNode extends Proj2Node{
 		clock = 0; // for proposal #'s
 		nid = nodeId;
 		heldLocks = new HashMap<String, Integer>();
-		requests = new LinkedList<LockAction>();
+		requests = new LinkedList<Proj2Message>();
 	}
 
 	public void run() throws IOException {
@@ -70,7 +70,7 @@ public class PaxosNode extends Proj2Node{
 					// and wait for more requests
 					continue;
 				} else {
-					requests.add(la);
+					requests.add(msg);
 
 					if(roundState.isEmpty() 
 							|| (roundState.get(currentRound).learner.learnedValue != null && canBeExecuted(la))) {
@@ -155,6 +155,7 @@ public class PaxosNode extends Proj2Node{
 		}
 	}
 
+
 	/*
 	 * @param to the destination port. If set to -1, broadcast.
 	 */
@@ -197,16 +198,56 @@ public class PaxosNode extends Proj2Node{
 	}
 
 	/**
-	 * This is called by learner when the learner learned something.
+	 * This is called when a value is learned. 
 	 * @param action The value being learned
+	 * @throws IOException 
 	 */
-	public static void valueLearned(LockAction action){
-		// TODO check if the learned value is from the top of the task queue
-		// This means this value is proposed by the proposer in this server.
-		if (requests.contains(action)) {
-			requests.remove(action);
+	public void valueLearned(LockAction action) throws IOException{
+		boolean missionCompleted = false; //the task can be performed. 
+		if(action.lock && 
+				(!heldLocks.containsKey(action.lockName) || heldLocks.get(action.lockName) == action.client)){
+			missionCompleted = true;
+			//put the lock
+			heldLocks.put(action.lockName, action.client);
+		}else if(!action.lock && heldLocks.get(action.lockName) == action.client){
+			missionCompleted = true;
+			//unlock
+			heldLocks.remove(action.lockName);
+		}else {
+			//add the task back to the end of the queue if the action belongs to this server
+			if (requests.size() > 0 && 
+					((LockAction)requests.peek().data).equals(action)) {
+				requests.add(requests.poll());
+			}
 		}
 		
-		// TODO propose the next value in the task queue. 
+		if(missionCompleted){
+			// TODO check if the learned value is from the top of the task queue
+			// This means this value is proposed by the proposer in this server.
+			if (requests.size() > 0 && 
+					((LockAction)requests.peek().data).equals(action)) {
+				requests.poll();
+			}
+			int size = requests.size();
+			// propose the next value in the task queue. 
+			for(int i = 0; i < size; i++){
+				if (canBeExecuted((LockAction) requests.peek().data)){
+					currentRound ++;
+					PaxosState ps = new PaxosState();
+					roundState.put(currentRound, ps);
+					Proj2Message respMsg = ps.proposer.handleMessage(requests.peek());
+					if(respMsg == null){
+						//error, ignore
+					}else{
+						//send response message
+						sendMessage(respMsg, respMsg.to);
+					}
+					break;
+				}else {
+					requests.add(requests.poll());
+				}
+			}
+		}
+		
 	}
 }

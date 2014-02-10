@@ -80,8 +80,9 @@ public class Proposer implements Serializable{
 					}
 				}
 				if(action == null){
+					System.out.println("requests size: " + PaxosNode.requests.size());
 					//no proposals from acceptors
-					action = PaxosNode.requests.peek();
+					action = (LockAction)PaxosNode.requests.peek().data;
 				}
 				currentProposalNumber = nextProposalNum(currentProposalNumber);
 				result = new Proj2Message();

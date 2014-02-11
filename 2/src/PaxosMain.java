@@ -4,7 +4,11 @@ import java.net.UnknownHostException;
 
 import Host.PaxosNode;
 
-
+/**
+ * A single paxos/server node in the lock service.
+ * 
+ * Takes in a port number as an argument to send/receive messages on.
+ */
 public class PaxosMain {
 	public static void main(String[] args) throws IOException {
 		if (args.length < 1) {

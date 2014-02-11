@@ -222,16 +222,10 @@ public class PaxosNode extends Proj2Node{
 			//unlock
 			heldLocks.remove(action.lockName);
 		}else {
-			//add the task back to the end of the queue if the action belongs to this server
-//			if (requests.size() > 0 && 
-//					((LockAction)requests.peek().data).equals(action)) {
-//				requests.add(requests.poll());
-//			}
 			assert(false);
 		}
 		
 		if(missionCompleted){
-			// TODO check if the learned value is from the task queue
 			// This means this value is proposed by the proposer in this server.
 			// remove this action if exists
 			int size = requests.size();

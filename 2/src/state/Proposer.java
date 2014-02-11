@@ -11,6 +11,10 @@ import data.PaxosMessage;
 import data.Proj2Message;
 import data.Proj2Message.Command;
 
+/**
+ * The Proposer state machine for a single instance of Paxos
+ *
+ */
 public class Proposer implements Serializable{
 	private static final long serialVersionUID = 1L;
 	private enum State{
@@ -40,7 +44,7 @@ public class Proposer implements Serializable{
 						+ "the current paxos instance is still running");
 				return null;
 			}
-			//TODO client will send LocakAction as data right?
+			
 			if(!(msg.data instanceof LockAction)){
 				System.err.println("Received message data is not an "
 						+ "instance of LocakAction");
@@ -94,14 +98,9 @@ public class Proposer implements Serializable{
 			}
 			break;
 		case ACCEPTED:
-			if(state != State.PREPARING){
-//				System.err.println("Proposer is not expecting any accepting message");
-			}
 			state = State.ACCEPTED;
 			break;
 		default:
-			
-			//TODO should not reach this point.
 			System.err.println("Wrong Message type passed into proposer");
 		}
 		return result;

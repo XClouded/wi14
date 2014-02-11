@@ -2,9 +2,12 @@ package data;
 
 import java.io.Serializable;
 
+/**
+ * Represents a single action to be taken by the lock service.
+ */
 public class LockAction implements Serializable{
 	private static final long serialVersionUID = 1L;
-	public boolean lock;
+	public boolean lock; // lock or unlock
 	public String lockName;
 	public int client;
 	public int uid;

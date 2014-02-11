@@ -18,7 +18,7 @@ Quirks:
 	Our implementation gets very chatty in phase 3 of the protocol, since each Acceptor will send ACCEPTED messages to *all* of the nodes for *every* ACCEPT request it receives beyond n/2 (where n is the number of paxos nodes).
 	
 Outstanding issues:
-	Node recovery is not implemented, nor is any form of paxos membership building/alteration. Failure of the node which has received a request before the accept requests have been sent out can cause the client to block permanently.
+	Node recovery is not implemented, nor is any form of paxos membership building/alteration. We did not handle deadlocks in the server side. For example, if client A holds lock X, client B holds lock Y, if A acquire Y and B acquire X, then deadlock will occur, and clients will be permanently blocked. Failure of the node which has received a request before the accept requests have been sent out can cause the client to block permanently.
 	
 Run instructions:
 

@@ -22,5 +22,7 @@ Outstanding issues:
 	
 Run instructions:
 
-	***** make a jar? compile from .java?
-	We assign the clients to ports 9000 and 9001, whereas Paxos membership is hard coded as being the nodes which are listening to ports 9002 - 9006. 
+	In the bin directory, there is a shell script which will start up the two clients and 5 paxos nodes automaticaly in separate xterms when run.
+	Alternately, one can compile all of the java files from source and, in the directory containing the ClientMain.cass and PaxosMain.class files, run 'java ClientMain 9000' and 'java ClientMain 9001' in separate windows, as well as 'java PaxosMain 9002-6' in 5 other windows.
+
+	In order to send requests to the lock service, type 'lock <x>' or 'lock <x> <paxosPort>' (e.g. 'lock A 9002') in order to send a lock request for a lock named 'x' to either the default or specified PaxosNode. Similarly, 'unlock <x>' or 'unlock <x> <paxosPort>' will send an unlock request to either the default or specified PaxosNode.

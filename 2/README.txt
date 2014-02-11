@@ -10,7 +10,7 @@ Design:
 	
 	When a server receives any kind of message, it first determines whether it is part of the paxos protocol or associated with the lock service. In the former case, the message is processed by that round's Proposer, Acceptor, or Learner, depending of whether it is an PREPARE, PROMISE, ACCEPT_REQUEST, ACCEPTED, or a LEARN request (defined in Proj2Message). In the latter case, pre-processing is done to determine whether the request can be processed immediately, or whether it needs to be queued pending an unlock request. Prepare and accept requests are handled by the Acceptor, promise and ACCEPTED are handled by the Proposer, and LEARN requests are handled by the Learner.
 
-	The Proposer, Acceptor, and Learner state machines take in the message, process the contents internally, and return a new message with new receipient(s) in order to progress to the next stage of the protocol. The state machines can specify a single node to respond to (such as the client or reply to a proposer) or to broadcast to all of the paxos nodes. Since each node contains a proposer, acceptor, and a learner, this often means that messages are being sent straight back to the same node, which does not need any special handling thanks to the connectionless nature of the network.
+	The Proposer, Acceptor, and Learner state machines take in the message, process the contents internally, and return (a) new message(s) with new receipient(s) in order to progress to the next stage of the protocol. The state machines can specify a single node to respond to (such as the client or reply to a proposer) or to broadcast to all of the paxos nodes. Since each node contains a proposer, acceptor, and a learner, this often means that messages are being sent straight back to the same node, which does not need any special handling thanks to the connectionless nature of the network.
 	
 	Whenever a value is learned for a round, the node also notifies the requesting client at its designated port. The client blocks until a response is received pertaining to its current request. This eliminates the case where a response accidentally gets mistaken for a lock reply.
 
@@ -22,7 +22,7 @@ Outstanding issues:
 	
 Run instructions:
 
-	In the bin directory, there is a shell script which will start up the two clients and 5 paxos nodes automaticaly in separate xterms when run.
-	Alternately, one can compile all of the java files from source and, in the directory containing the ClientMain.cass and PaxosMain.class files, run 'java ClientMain 9000' and 'java ClientMain 9001' in separate windows, as well as 'java PaxosMain 9002-6' in 5 other windows.
+	In the src directory, there is a shell script which will start up the two clients and 5 paxos nodes automaticaly in separate xterms when run.
+	Alternately, one can compile all of the java files from source and, in the directory containing the ClientMain.class and PaxosMain.class files, run 'java ClientMain 9000' and 'java ClientMain 9001' in separate windows, as well as 'java PaxosMain 9002-6' in 5 other windows.
 
-	In order to send requests to the lock service, type 'lock <x>' or 'lock <x> <paxosPort>' (e.g. 'lock A 9002') in order to send a lock request for a lock named 'x' to either the default or specified PaxosNode. Similarly, 'unlock <x>' or 'unlock <x> <paxosPort>' will send an unlock request to either the default or specified PaxosNode.
+	In order to send requests to the lock service, type 'lock <x>' in order to send a lock request for a lock named 'x' to either the default or specified PaxosNode. Similarly, 'unlock <x>' will send an unlock request to either the default or specified PaxosNode.

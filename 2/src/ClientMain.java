@@ -3,7 +3,11 @@ import java.net.UnknownHostException;
 
 import Host.LockClient;
 
-
+/**
+ * A single client node which makes use of the paxos lock service.
+ * 
+ * Takes in a port number as an argument to send/receive messages on.
+ */
 public class ClientMain {
 	public static void main(String[] args) throws UnknownHostException, IOException {
 		if (args.length < 1) {
@@ -12,6 +16,7 @@ public class ClientMain {
 			System.exit(1);
 		}
 		
+		// parse the port
 		int port = 0;
 		
 		try {
@@ -21,6 +26,7 @@ public class ClientMain {
 			System.exit(1);
 		}
 		
+		// start a client
 		LockClient client = new LockClient(port);
 		
 		client.run();

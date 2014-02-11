@@ -3,7 +3,8 @@ package data;
 import java.io.Serializable;
 
 /**
- * Class to pass messages around.
+ * Class to pass messages around. 
+ * This is used both for client-server communication as well as inter-paxos communication.
  */
 public class Proj2Message implements Serializable{
 	private static final long serialVersionUID = 1L;

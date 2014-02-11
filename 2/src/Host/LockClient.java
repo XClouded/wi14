@@ -8,7 +8,10 @@ import java.net.UnknownHostException;
 import data.LockAction;
 import data.Proj2Message;
 
-
+/**
+ * The core logic running a client for the proj 2 lock service
+ *
+ */
 public class LockClient extends Proj2Node{
 	private static final String EXIT = "exit";
 	private static final String LOCK = "lock";
@@ -23,6 +26,11 @@ public class LockClient extends Proj2Node{
 		this.port = port;
 	}
 
+	/**
+	 * Start receiving commands from the command line and sending requests out
+	 * to the paxos-based lock service
+	 * @throws IOException
+	 */
 	public void run() throws IOException {
 
 		// open a listening socket
@@ -125,11 +133,16 @@ public class LockClient extends Proj2Node{
 		msgSocket.close();
 	}
 
+	/**
+	 * Block, receiving messages from the lock service until we receive a response
+	 * to the specified request.
+	 * @param actionToWaitFor
+	 * @throws IOException
+	 */
 	private void receiveConfirmation(LockAction actionToWaitFor) throws IOException {
 		Proj2Message msg = null;
 		do {
 			msg = receiveMessage();
-//			System.out.println("Got message as client: " + msg);
 		} while (!actionToWaitFor.equals(msg.data));
 		LockAction la = (LockAction)msg.data;
 		System.out.println(la.lockName + " is " + (la.lock ? "locked" : "unlocked"));

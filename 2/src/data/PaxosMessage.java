@@ -2,6 +2,10 @@ package data;
 
 import java.io.Serializable;
 
+/**
+ * Messages passed as data between paxos nodes
+ *
+ */
 public class PaxosMessage implements Serializable{
 	
 	private static final long serialVersionUID = 8947344733198515849L;

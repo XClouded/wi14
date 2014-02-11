@@ -129,7 +129,9 @@ public class LockClient extends Proj2Node{
 		Proj2Message msg = null;
 		do {
 			msg = receiveMessage();
-			System.out.println("Got message as client: " + msg);
+//			System.out.println("Got message as client: " + msg);
 		} while (!actionToWaitFor.equals(msg.data));
+		LockAction la = (LockAction)msg.data;
+		System.out.println(la.lockName + " is " + (la.lock ? "locked" : "unlocked"));
 	}
 }

@@ -30,7 +30,6 @@ public class Learner implements Serializable{
 		Proj2Message resp = null;
 		switch(msg.command) {
 		case LEARN:
-			System.out.println("ASKED TO LEARN: " + ((PaxosMessage)msg.data).value.toString());
 			if (learnedValue != null) return null;//ignore if there is already something learned. 
 			if(!(msg.data instanceof PaxosMessage)){
 				System.err.println("Received message data is not an "

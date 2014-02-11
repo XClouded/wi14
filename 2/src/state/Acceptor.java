@@ -42,7 +42,7 @@ public class Acceptor implements Serializable{
         		toProposer.command = Command.PROMISE;
         		toProposer.data = highestNumProposal;
         	}else { // accept the proposed value
-        		
+        		System.out.println("ACCEPTING: " + ((PaxosMessage)msg.data).value.toString());
         		toProposer.command = Command.ACCEPTED;
         		toProposer.data = pmReceived;
         		highestNumProposal = pmReceived;

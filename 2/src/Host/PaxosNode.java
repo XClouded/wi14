@@ -52,9 +52,8 @@ public class PaxosNode extends Proj2Node{
 			clock = Math.max(clock, msg.clockVal) + 1;
 			PaxosState ps = null;
 			int round = 0;
-			System.out.println("command: " + msg.command);
+//			System.out.println("command: " + msg.command);
 			if (msg.command == Command.LOCK_SERVICE_REQUEST) {
-				System.out.println("requests queue size " + requests.size());
 				// msg is client request
 				//update the queue
 				LockAction la = (LockAction)msg.data;
@@ -71,15 +70,14 @@ public class PaxosNode extends Proj2Node{
 					// and wait for more requests
 					continue;
 				} else {
-					System.out.println("action: " + la.toString());
 					requests.add(msg);
 
 					if(roundState.isEmpty() || roundState.get(currentRound) == null 
 							|| (roundState.get(currentRound).learner.learnedValue != null && canBeExecuted(la))) {
 						// ready to execute request
 						// increment the current round and go into the switch statement
-						System.out.println("new round");
-						currentRound++;
+						updateCurrentRound();
+
 						round = currentRound;
 					} else {
 						// not ready to execute the request yet!
@@ -137,8 +135,8 @@ public class PaxosNode extends Proj2Node{
 				}
 				break;
 			case LEARN:
-				System.out.println("learn this: " + ((PaxosMessage)msg.data).value.toString());
 				Proj2Message learnerMsg = ps.learner.handleMessage(msg);
+				
 				if(learnerMsg == null){
 					//there are three cases:
 					//1. nothing learned. 
@@ -159,6 +157,12 @@ public class PaxosNode extends Proj2Node{
 		}
 	}
 
+
+	private void updateCurrentRound() {
+		while(roundState.containsKey(currentRound)){
+			currentRound ++;
+		}
+	}
 
 	/*
 	 * @param to the destination port. If set to -1, broadcast.
@@ -207,7 +211,6 @@ public class PaxosNode extends Proj2Node{
 	 * @throws IOException 
 	 */
 	public void valueLearned(LockAction action) throws IOException{
-		System.out.println("value learned: " + action.toString());
 		boolean missionCompleted = false; //the task can be performed. 
 		if(action.lock && 
 				(!heldLocks.containsKey(action.lockName) || heldLocks.get(action.lockName) == action.client)){
@@ -244,7 +247,7 @@ public class PaxosNode extends Proj2Node{
 			// propose the next value in the task queue. 
 			for(int i = 0; i < size; i++){
 				if (canBeExecuted((LockAction) requests.peek().data)){
-					currentRound ++;
+					updateCurrentRound();
 					PaxosState ps = new PaxosState();
 					roundState.put(currentRound, ps);
 					Proj2Message respMsg = ps.proposer.handleMessage(requests.peek());

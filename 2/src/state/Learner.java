@@ -30,6 +30,7 @@ public class Learner implements Serializable{
 		Proj2Message resp = null;
 		switch(msg.command) {
 		case LEARN:
+			System.out.println("ASKED TO LEARN: " + ((PaxosMessage)msg.data).value.toString());
 			if (learnedValue != null) return null;//ignore if there is already something learned. 
 			if(!(msg.data instanceof PaxosMessage)){
 				System.err.println("Received message data is not an "
@@ -49,11 +50,10 @@ public class Learner implements Serializable{
 					}
 					if(actionVote.get(la) >= PaxosNode.MAJORITY_SIZE){ //value learned
 						learnedValue = la;
-						
+						System.out.println("LEARNED THIS: " + la.toString());
 						//notify client
 						resp = new Proj2Message();
 						resp.command = Command.LOCK_SERVICE_RESPONSE;
-						System.out.println("PM: value: " + pm.value);
 						resp.data = pm.value;
 						resp.from = PaxosNode.nid;
 						resp.to = pm.value.client;

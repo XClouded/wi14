@@ -81,11 +81,10 @@ public class Proposer implements Serializable{
 					}
 				}
 				if(action == null){
-					System.out.println("requests size: " + PaxosNode.requests.size());
 					//no proposals from acceptors
 					action = (LockAction) originalPropose.data;
 				}
-				System.out.println("accept this!!!: " + action);
+				System.out.println("PROPOSING: " + action);
 				currentProposalNumber = nextProposalNum(currentProposalNumber);
 				result = new Proj2Message();
 				result.command = Command.ACCEPT_REQUEST;
@@ -96,7 +95,7 @@ public class Proposer implements Serializable{
 			break;
 		case ACCEPTED:
 			if(state != State.PREPARING){
-				System.err.println("Proposer is not expecting any accepting message");
+//				System.err.println("Proposer is not expecting any accepting message");
 			}
 			state = State.ACCEPTED;
 			break;

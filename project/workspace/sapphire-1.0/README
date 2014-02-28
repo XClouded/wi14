@@ -1,0 +1,18 @@
+1) The sapphire library is an Eclipse project. Just import sapphire-1.0/sapphire in Eclipse 
+2) Each of the example applications in the example_apps folder is an Eclipse project.
+
+3) Set the SAPPHIRE_HOME environment variable
+4) Configure $SAPPHIRE_HOME/deployment/config.json
+5) Run $SAPPHIRE_HOME/deployment/install.py
+6) Run $SAPPHIRE_HOME/deployment/deploy.py
+
+Notes:
+- When running on the smartphones or tablets, need to include sapphire.jar, and
+the jars found in $SAPPHIRE_HOME/libs/
+- Generate stubs with the scripts in $SAPPHIRE_HOME/generators. To switch between apps
+you need to modify the imports in generate_app_stubs.py
+- To switch to deployment of another app, modify $SAPPHIRE_HOME/deployment/deploy.py
+- harmony_rmi.jar is patched to work with Android 4.2
+
+~~~
+~~~ Have a great day! Happy hacking! ~~~

@@ -1,0 +1,15 @@
+{
+   "nodes": ["myers", "moranis"],
+
+   "servers": [
+       {"hostname": "myers.cs.washington.edu", "port":"22345"}
+   ],
+
+   "clients": [
+       {"hostname": "myers.cs.washington.edu", "port": "22346"}
+   ],
+
+   "oms": {"hostname": "myers.cs.washington.edu", "port": "22347"},
+
+   "storage": {"hostname": "howe.cs.washington.edu", "port": "6666", "store": "sapphire"}
+}

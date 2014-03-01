@@ -9,8 +9,9 @@ import getpass
 import json
 import os
 
+user_name = "pingyh"
 nodes_file = "config.json"
-home_dir = "/scratch/" + getpass.getuser()
+home_dir = "~/sapphire/scratch/" 
 
 def run_cmd(cmd, sout=None):
     print reduce(lambda x, y: x + " " + y, cmd, "")
@@ -143,7 +144,7 @@ def copy_out_on_nodes(nodes):
         print "Copying on " + node
         cmd = ["scp", "-r"]
         cmd += [home_dir + "/out"]
-        cmd += [node + ":" + home_dir]
+        cmd += [user_name+"@"+node + ":" + home_dir]
         run_cmd(cmd, sout=devnull)
 
         # It takes longer to archive and then dearchive

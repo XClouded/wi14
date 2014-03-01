@@ -1,6 +1,6 @@
 package sapphire.appexamples.hankstodo.glue;
 
-import com.example.hankstodo.R;
+import sapphire.appexamples.hankstodo.R;
 
 import android.app.Activity;
 import android.content.Intent;

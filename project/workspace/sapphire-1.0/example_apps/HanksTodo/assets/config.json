@@ -1,7 +1,7 @@
 {
-   "client" : {"port": "22346"},
+   "client" : {"port" : "22345"},
 
-   "oms": {"hostname": "128.208.6.148", "port": "22347"},
+   "oms": {"hostname": "attu4.cs.washington.edu", "port": "22347"},
 
-   "storage": {"hostname": "howe.cs.washington.edu", "port": "6666", "store": "sapphire"}
+   "storage": {"hostname": "attu4.cs.washington.edu", "port": "6666", "store": "sapphire"}
 }

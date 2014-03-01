@@ -15,8 +15,9 @@ import json
 import os
 
 ssh_cmd = "ssh"
-home_dir = "/scratch/" + getpass.getuser() + "/out"
-log_folder = "/bigraid/users/" + getpass.getuser() + "/sapphire/logs"
+user_name = "pingyh"
+home_dir = "/homes/iws/pingyh/sapphire/scratch/out"
+log_folder = "/homes/iws/pingyh/sapphire/logs"
 config_file = "config.json"
 app_starter = "sapphire.runtime.SapphireActivityStarter"
 
@@ -65,23 +66,23 @@ def copy_classes(nodes, android_home):
         # Copy java classes
         cmd = ["scp", "-r"]
         cmd += [android_home + "/sapphire/bin/classes"]
-        cmd += [node + ":" + home_dir + "/sapphire/bin/"]
+        cmd += [user_name+"@"+node + ":" + home_dir + "/sapphire/bin/"]
         run_cmd(cmd)
         
         # copy dex versions
         cmd = ["scp", "-r"]
         cmd += [android_home + "/sapphire/bin/classes.dex"]
-        cmd += [node + ":" + home_dir + "/sapphire/bin/"]
+        cmd += [user_name+"@"+node + ":" + home_dir + "/sapphire/bin/"]
         run_cmd(cmd)
 
         cmd = ["scp", "-r"]
         cmd += [home_dir + "/apps/" + app_name]
-        cmd += [node + ":" + home_dir + "/apps/"]
+        cmd += [user_name+"@"+node + ":" + home_dir + "/apps/"]
         run_cmd(cmd)
         
         cmd = ["scp", "-r"]
         cmd += [android_home + "/deployment/" + config_file]
-        cmd += [node + ":" + home_dir + "/"]
+        cmd += [user_name+"@"+node + ":" + home_dir + "/"]
         run_cmd(cmd)
 
 def start_oms(oms):
@@ -89,7 +90,7 @@ def start_oms(oms):
     port = oms["port"]
 
     print 'Starting OMS on '+hostname+":"+port
-    cmd = [ssh_cmd, hostname]
+    cmd = [ssh_cmd, user_name+"@"+hostname]
     # cmd += [home_dir + '/host/linux-x86/bin/dalvik']
     cmd += ['java']
     cmd += ['-Djava.util.logging.config.file=\"' + p_log + '\"']
@@ -143,7 +144,7 @@ def start_servers(servers):
         print "Starting kernel server on "+hostname+":"+port
 
         # /bin/classes.dex is generated after you try to run an android app from eclipse_adt
-        cmd = [ssh_cmd, hostname]
+        cmd = [ssh_cmd, user_name+"@"+hostname]
         # cmd += [home_dir + '/host/linux-x86/bin/dalvik']
         cmd += ['java']
         cmd += ['-Djava.util.logging.config.file=\"' + p_log + '\"']
@@ -179,7 +180,7 @@ def start_clients(clients):
         print 'Starting App on '+hostname+":"+port
 
         # /bin/classes.dex is generated after you try to run an android app from eclipse_adt
-        cmd = [ssh_cmd, hostname]
+        cmd = [ssh_cmd, user_name+"@"+hostname]
         cmd += ['java']
         cmd += ['-Djava.util.logging.config.file=\"' + p_log + '\"']
         cmd += ['-cp ' + cp_java_app +':' + '\"' + cp_java_app + '/*\"' + ':' + cp_java_sapphire + ':' + cp_java_contrib]

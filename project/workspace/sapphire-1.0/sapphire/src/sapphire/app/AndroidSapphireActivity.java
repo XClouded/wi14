@@ -79,6 +79,7 @@ public class AndroidSapphireActivity extends Activity {
 				}
 
 				System.out.println("My local IP address: " + getLocalIpAddress());
+				System.out.println("port: " + port);
 				host = new InetSocketAddress(getLocalIpAddress(), port);
 
 				System.setProperty("java.rmi.server.hostname", host.getAddress().getHostAddress());

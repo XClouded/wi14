@@ -8,6 +8,7 @@ import signal
 import json
 
 ssh_cmd = "ssh"
+user_name = "pingyh"
 
 def parse_server_config(server_file):
     f = open(server_file,"r")
@@ -20,10 +21,10 @@ def run_cmd(cmd):
 
 def kill_servers(nodes):
     for node in nodes:
-        cmd = [ssh_cmd, node]
+        cmd = [ssh_cmd, user_name+"@"+node]
         cmd += ["pkill dalvikvm"]        
         run_cmd(cmd)
-        cmd = [ssh_cmd, node]
+        cmd = [ssh_cmd, user_name+"@"+node]
         cmd += ["pkill java"]
         run_cmd(cmd)
 

@@ -1,15 +1,14 @@
 {
-   "nodes": ["myers", "moranis"],
+   "nodes": ["attu4.cs.washington.edu"],
 
    "servers": [
-       {"hostname": "myers.cs.washington.edu", "port":"22345"}
+       {"hostname": "attu4.cs.washington.edu", "port":"22345"}
    ],
 
    "clients": [
-       {"hostname": "myers.cs.washington.edu", "port": "22346"}
    ],
 
-   "oms": {"hostname": "myers.cs.washington.edu", "port": "22347"},
+   "oms": {"hostname": "attu4.cs.washington.edu", "port": "22347"},
 
-   "storage": {"hostname": "howe.cs.washington.edu", "port": "6666", "store": "sapphire"}
+   "storage": {"hostname": "attu4.cs.washington.edu", "port": "6666", "store": "sapphire"}
 }

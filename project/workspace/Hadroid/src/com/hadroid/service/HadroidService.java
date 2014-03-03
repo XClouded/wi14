@@ -1,5 +1,7 @@
 package com.hadroid.service;
 
+import message.HadroidMessage;
+import message.RequestTaskMessage;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Bundle;
@@ -13,6 +15,7 @@ import android.widget.Toast;
  *
  */
 public class HadroidService extends Service {
+	private static final String workstationIP = "128.208.7.104";
 
 	public HadroidService() {
 		//TODO anything?
@@ -36,6 +39,8 @@ public class HadroidService extends Service {
 	public void onStart(Intent intent, int startId) {
 		Log.d("HadroidService", "onStart");
 		Toast.makeText(this, "HadroidService started", Toast.LENGTH_LONG).show();
+		
+		HadroidMessage msg = new RequestTaskMessage();
 	}
 
 	@Override

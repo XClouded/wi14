@@ -3,7 +3,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import task.HadroidTask;
-import uw.edu.hadroid.workflow.HadroidJob;
+import uw.edu.hadroid.workflow.HadroidMapReduceJob;
 
 
 public class HadroidJobsManager {
@@ -14,7 +14,7 @@ public class HadroidJobsManager {
         jobs = new LinkedList<HadroidJobDecomposer>();
     }
     
-    public void addHadroidJob(HadroidJob job){
+    public void addHadroidJob(HadroidMapReduceJob job){
         jobs.add(new HadroidJobDecomposer(job));
     }
     

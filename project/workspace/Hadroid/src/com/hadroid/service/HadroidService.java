@@ -16,6 +16,7 @@ import android.widget.Toast;
  */
 public class HadroidService extends Service {
 	private static final String workstationIP = "128.208.7.104";
+	private static final int SERVER_PORT = 6669;
 
 	public HadroidService() {
 		//TODO anything?
@@ -41,6 +42,7 @@ public class HadroidService extends Service {
 		Toast.makeText(this, "HadroidService started", Toast.LENGTH_LONG).show();
 		
 		HadroidMessage msg = new RequestTaskMessage();
+		
 	}
 
 	@Override

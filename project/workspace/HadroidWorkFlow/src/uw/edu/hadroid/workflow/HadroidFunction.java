@@ -1,9 +1,9 @@
 package uw.edu.hadroid.workflow;
 
-/**
- * Override this class to specify the calculation
- */
-public abstract class HadroidFunction {
+import java.util.List;
 
-    public abstract Object run(Object input);
+public abstract class HadroidFunction<I, O> {
+
+    abstract public List<O> run(List<I> input);
+
 }

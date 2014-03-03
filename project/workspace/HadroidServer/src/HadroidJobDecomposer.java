@@ -1,5 +1,5 @@
 import task.HadroidTask;
-import uw.edu.hadroid.workflow.HadroidJob;
+import uw.edu.hadroid.workflow.HadroidMapReduceJob;
 
 /**
  * 
@@ -9,9 +9,9 @@ public class HadroidJobDecomposer {
 
     private final static int DATA_CHUNK_SIZE = 256 * 1024; //256K
     
-    private HadroidJob job;
+    private HadroidMapReduceJob job;
     
-    public HadroidJobDecomposer(HadroidJob job){
+    public HadroidJobDecomposer(HadroidMapReduceJob job){
         this.job = job;
     }
     

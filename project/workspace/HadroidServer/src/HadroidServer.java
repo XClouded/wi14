@@ -33,8 +33,8 @@ public class HadroidServer {
             //create a thread pool
             ExecutorService executor = Executors.newFixedThreadPool(MAX_THREADS_COUNT);
             while (true) {
-                    Socket connectionSocket = serverSocket.accept();
-                    executor.execute(new ConnectionHandler(connectionSocket));
+                Socket connectionSocket = serverSocket.accept();
+                executor.execute(new ConnectionHandler(connectionSocket));
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -60,18 +60,19 @@ public class HadroidServer {
             try {
                 InputStream in = socket.getInputStream();
                 ObjectInputStream ois = new ObjectInputStream(in);
-                    HadroidMessage msg = (HadroidMessage) ois.readObject();
-                    HadroidMessage returnMsg = null;
-                    if(msg instanceof RequestTaskMessage ){
-                        returnMsg = new TaskMessage(jobsManager.getNextTask());
-                    }else if (msg instanceof ResultMessage){
-                        //
-                        
-                        //create return message
-                        returnMsg = new TaskMessage(jobsManager.getNextTask());
-                    }
-                    ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-                    oos.writeObject(returnMsg);
+                HadroidMessage msg = (HadroidMessage) ois.readObject();
+                System.out.println("request received");
+                HadroidMessage returnMsg = null;
+                if(msg instanceof RequestTaskMessage ){
+                    returnMsg = new TaskMessage(jobsManager.getNextTask());
+                }else if (msg instanceof ResultMessage){
+                    //
+                    
+                    //create return message
+                    returnMsg = new TaskMessage(jobsManager.getNextTask());
+                }
+                ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+                oos.writeObject(returnMsg);
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
                 

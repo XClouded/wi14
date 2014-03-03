@@ -12,11 +12,12 @@ public class HadroidTask {
     private HadroidFunction function;
     private UUID uuid;
 
-    public HadroidTask(List data, HadroidFunction function) {
+    public HadroidTask(List data, HadroidFunction function, UUID uuid) {
         this.data = data;
         this.function = function;
-        uuid = UUID.randomUUID();
+        this.uuid = uuid;
     }
+
 
     public List getData() {
         return data;

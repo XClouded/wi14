@@ -60,7 +60,6 @@ public class HadroidServer {
             try {
                 InputStream in = socket.getInputStream();
                 ObjectInputStream ois = new ObjectInputStream(in);
-                try {
                     HadroidMessage msg = (HadroidMessage) ois.readObject();
                     HadroidMessage returnMsg = null;
                     if(msg instanceof RequestTaskMessage ){
@@ -73,13 +72,10 @@ public class HadroidServer {
                     }
                     ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
                     oos.writeObject(returnMsg);
-                } catch (ClassNotFoundException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
                 
             } catch (IOException e1) {
-                // TODO Auto-generated catch block
                 e1.printStackTrace();
             }
         }

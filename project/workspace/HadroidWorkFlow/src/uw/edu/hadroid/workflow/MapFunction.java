@@ -9,9 +9,9 @@ import java.util.List;
  * @param <K> type of return key
  * @param <V> type of return value
  */
-public abstract class MapFunction<K, V> extends HadroidFunction<String, Pair<K, V>> {
+public abstract class MapFunction extends HadroidFunction {
 
     @Override
-    abstract public List<Pair<K, V>> run(List<String> input);
+    abstract public List run(List input);
 
 }

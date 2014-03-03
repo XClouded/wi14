@@ -4,7 +4,6 @@ import java.util.List;
 
 public abstract class HadroidMapReduceJob {
 
-    protected File inputData;
     protected MapFunction map;
     protected ReduceFunction reduce;
     
@@ -12,14 +11,6 @@ public abstract class HadroidMapReduceJob {
     abstract public String getInputFilePath();
     abstract public String getOutputFilePath();
     
-    public File getInputData() {
-        return inputData;
-    }
-
-    public void setInputData(File inputData) {
-        this.inputData = inputData;
-    }
-
     public MapFunction getMap() {
         return map;
     }

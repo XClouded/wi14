@@ -10,8 +10,11 @@ import java.io.Serializable;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+import task.HadroidTask;
+
 import message.HadroidMessage;
 import message.RequestTaskMessage;
+import message.TaskMessage;
 import android.app.Activity;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -22,6 +25,7 @@ import android.view.View;
 public class MainActivity extends Activity {
     
     private final String SERVER_IP = "172.28.7.96";
+//    private final String SERVER_IP = "128.208.7.100";
     private final int SERVER_PORT = 6669;
 
     @Override
@@ -56,7 +60,6 @@ public class MainActivity extends Activity {
                 socket = new Socket(SERVER_IP, SERVER_PORT);
                 socket.setTcpNoDelay(true);
                 OutputStream outstream = socket.getOutputStream(); 
-                PrintWriter output = new PrintWriter(outstream, true);
                 ObjectOutputStream oos = new ObjectOutputStream(outstream);
                 oos.writeObject(new RequestTaskMessage());
                 
@@ -65,6 +68,10 @@ public class MainActivity extends Activity {
                 Log.d("HADROID_TESTER", "received: ");
                 try {
                     HadroidMessage msg = (HadroidMessage) ois.readObject();
+                    if(msg instanceof TaskMessage){
+                        HadroidTask task = ((TaskMessage) msg).getTask();
+                        task.getFunction().run(task.getData());
+                    }
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }

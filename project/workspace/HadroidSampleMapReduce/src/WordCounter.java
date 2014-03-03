@@ -2,9 +2,7 @@
 import java.util.List;
 
 import uw.edu.hadroid.workflow.HadroidMapReduceJob;
-import uw.edu.hadroid.workflow.MapFunction;
 import uw.edu.hadroid.workflow.Pair;
-import uw.edu.hadroid.workflow.ReduceFunction;
 
 
 public class WordCounter extends HadroidMapReduceJob {
@@ -14,26 +12,6 @@ public class WordCounter extends HadroidMapReduceJob {
         reduce = new WordCounterReduce();
     }
 
-    public class WordCounterMap extends MapFunction{
-
-        @Override
-        public List run(List input) {
-            System.out.println("In MAP");
-            return null;
-        }
-        
-    }
-    
-    public class WordCounterReduce extends ReduceFunction{
-
-        @Override
-        public List run(List input) {
-            // TODO Auto-generated method stub
-            System.out.println("In REDUCE");
-            return null;
-        }
-        
-    }
 
     @Override
     public String getInputFilePath() {

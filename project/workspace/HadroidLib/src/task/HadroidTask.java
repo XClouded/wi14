@@ -14,12 +14,14 @@ public class HadroidTask implements Serializable{
      */
     private static final long serialVersionUID = -1192939452226482886L;
     private List data;
-    private HadroidFunction function;
+//    private HadroidFunction function;
+    private byte[] dexFile; //dex file
+    private String className; //name of the class
     private UUID uuid;
 
     public HadroidTask(List data, HadroidFunction function, UUID uuid) {
         this.data = data;
-        this.function = function;
+//        this.function = function;
         this.uuid = uuid;
     }
 
@@ -38,13 +40,25 @@ public class HadroidTask implements Serializable{
         this.uuid = uuid;
     }
 
-    public HadroidFunction getFunction() {
-        return function;
+
+    public byte[] getDexFile() {
+        return dexFile;
     }
-    public void setFunction(HadroidFunction function) {
-        this.function = function;
+
+
+    public void setDexFile(byte[] dexFile) {
+        this.dexFile = dexFile;
     }
- 
-    
+
+
+    public String getClassName() {
+        return className;
+    }
+
+
+    public void setClassName(String className) {
+        this.className = className;
+    }
+
     
 }

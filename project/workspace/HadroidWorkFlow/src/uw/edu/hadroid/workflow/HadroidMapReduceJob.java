@@ -5,30 +5,26 @@ import java.util.List;
 
 public abstract class HadroidMapReduceJob implements Serializable{
 
-    /**
-     * 
-     */
-    private static final long serialVersionUID = 6970608919535025001L;
-    protected MapFunction map;
-    protected ReduceFunction reduce;
+    protected HadroidFunction map;
+    protected HadroidFunction reduce;
     
 
     abstract public String getInputFilePath();
     abstract public String getOutputFilePath();
     
-    public MapFunction getMap() {
+    public HadroidFunction getMap() {
         return map;
     }
 
-    public void setMap(MapFunction map) {
+    public void setMap(HadroidFunction map) {
         this.map = map;
     }
 
-    public ReduceFunction getReduce() {
+    public HadroidFunction getReduce() {
         return reduce;
     }
 
-    public void setReduce(ReduceFunction reduce) {
+    public void setReduce(HadroidFunction reduce) {
         this.reduce = reduce;
     }
 

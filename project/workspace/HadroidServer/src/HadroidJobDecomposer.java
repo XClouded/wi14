@@ -100,8 +100,11 @@ public class HadroidJobDecomposer {
     public HadroidTask getNextTask(){
         
         HadroidTask task = null;
+        System.out.println("next task in decomposer");
         if(!chunkUndone.isEmpty()){//still some map work need to be done
+            System.out.println("not empty");
             FileChunk fc = chunkUndone.remove();
+            System.out.println("fc: " + fc.startPos);
             try {
                 raf.seek(fc.startPos);
                 byte[] data = new byte[fc.size];

@@ -70,6 +70,9 @@ public class MainActivity extends Activity {
                     HadroidMessage msg = (HadroidMessage) ois.readObject();
                     if(msg instanceof TaskMessage){
                         HadroidTask task = ((TaskMessage) msg).getTask();
+                        if(task == null) {
+                            Log.d("HADROID_TESTER", "nullllllllllll");
+                        }
                         task.getFunction().run(task.getData());
                     }
                 } catch (ClassNotFoundException e) {

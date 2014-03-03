@@ -13,20 +13,20 @@ public class WordCounter extends HadroidMapReduceJob {
         reduce = new WordCounterReduce();
     }
 
-    public class WordCounterMap extends MapFunction<String, Integer>{
+    public class WordCounterMap extends MapFunction{
 
         @Override
-        public List<Pair<String, Integer>> run(List<String> input) {
+        public List run(List input) {
             System.out.println("In MAP");
             return null;
         }
         
     }
     
-    public class WordCounterReduce extends ReduceFunction<String, Integer, String, Integer>{
+    public class WordCounterReduce extends ReduceFunction{
 
         @Override
-        public List<Pair<String, Integer>> run(List<Pair<String, Integer>> input) {
+        public List run(List input) {
             // TODO Auto-generated method stub
             System.out.println("In REDUCE");
             return null;
@@ -36,14 +36,12 @@ public class WordCounter extends HadroidMapReduceJob {
 
     @Override
     public String getInputFilePath() {
-        // TODO Auto-generated method stub
-        return null;
+        return "/Users/isphrazy/Documents/study/CSE/550/hw/wi14/project/workspace/data/sh.txt";
     }
 
     @Override
     public String getOutputFilePath() {
-        // TODO Auto-generated method stub
-        return null;
+        return "/Users/isphrazy/Documents/study/CSE/550/hw/wi14/project/workspace/data/sh_out.txt";
     }
     
 }

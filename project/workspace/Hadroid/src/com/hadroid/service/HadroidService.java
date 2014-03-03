@@ -26,7 +26,7 @@ import android.widget.Toast;
 public class HadroidService extends Service {
 	private static final String LOG_TAG = "HadroidService";
 	//private static final String SERVER_IP = "172.28.7.96";
-	private static final String SERVER_IP = "69.91.153.197";
+	private static final String SERVER_IP = "169.254.33.128";
 	private static final int SERVER_PORT = 6669;
 	private Socket serverSocket;
 

@@ -1,5 +1,6 @@
 package com.hadroid.service;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -24,14 +25,17 @@ import android.widget.Toast;
  *
  */
 public class HadroidService extends Service {
+	private static final String JAR_NAME = "tmp.jar";
 	private static final String LOG_TAG = "HadroidService";
 	//private static final String SERVER_IP = "172.28.7.96";
 	private static final String SERVER_IP = "169.254.33.128";
 	private static final int SERVER_PORT = 6669;
+	
+	private final File tmpDir;
 	private Socket serverSocket;
 
 	public HadroidService() {
-		//TODO anything?
+		tmpDir = this.getCacheDir();
 		serverSocket = null;
 	}
 

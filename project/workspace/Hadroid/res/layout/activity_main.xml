@@ -9,9 +9,23 @@
     tools:context=".MainActivity" >
 
     <Button
-        android:id="@+id/button1"
+        android:id="@+id/startButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Send Something" />
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="19dp"
+        android:layout_marginTop="20dp"
+        android:onClick="startHadroidService"
+        android:text="@string/start" />
+
+    <Button
+        android:id="@+id/stopButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/startButton"
+        android:layout_centerHorizontal="true"
+        android:onClick="stopHadroidService"
+        android:text="@string/stop" />
 
 </RelativeLayout>

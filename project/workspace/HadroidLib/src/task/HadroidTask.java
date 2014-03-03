@@ -1,13 +1,18 @@
 package task;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
 import uw.edu.hadroid.workflow.HadroidFunction;
 
 
-public class HadroidTask {
+public class HadroidTask implements Serializable{
     
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -1192939452226482886L;
     private List data;
     private HadroidFunction function;
     private UUID uuid;

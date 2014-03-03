@@ -1,9 +1,14 @@
 package uw.edu.hadroid.workflow;
 import java.io.File;
+import java.io.Serializable;
 import java.util.List;
 
-public abstract class HadroidMapReduceJob {
+public abstract class HadroidMapReduceJob implements Serializable{
 
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 6970608919535025001L;
     protected MapFunction map;
     protected ReduceFunction reduce;
     

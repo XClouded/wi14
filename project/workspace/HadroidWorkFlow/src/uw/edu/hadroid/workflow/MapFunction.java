@@ -11,6 +11,11 @@ import java.util.List;
  */
 public abstract class MapFunction extends HadroidFunction {
 
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 6469339628603356660L;
+
     @Override
     abstract public List run(List input);
 

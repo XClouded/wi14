@@ -38,6 +38,10 @@ public class HadroidJobsManager {
         Iterator<HadroidJobDecomposer> it = jobs.iterator();
         while(it.hasNext()){
             HadroidJobDecomposer currentDecomposer = it.next();
+            if(currentDecomposer.isJobDone()) {
+                it.remove();
+                continue;
+            }
             HadroidTask task = currentDecomposer.getNextTask();
             if(task != null){
                 taskToDecomposer.put(task.getUuid(), currentDecomposer);

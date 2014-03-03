@@ -118,7 +118,7 @@ public class HadroidJobDecomposer {
                 e.printStackTrace();
             }
         }else if(chunkInProgress.isEmpty()){//all map work is done
-            //TODO return some reduce task
+            //TODO return some reduce task if available
         }
         return task;
     }

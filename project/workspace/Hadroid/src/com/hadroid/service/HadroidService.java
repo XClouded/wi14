@@ -35,16 +35,16 @@ import android.widget.Toast;
 public class HadroidService extends Service {
 	private static final String JAR_NAME = "tmp.jar";
 	private static final String LOG_TAG = "HadroidService";
-	//private static final String SERVER_IP = "172.28.7.96";
-	private static final String SERVER_IP = "169.254.33.128";
+	private static final String SERVER_IP = "172.28.7.96";
+	//private static final String SERVER_IP = "169.254.33.128";
 	private static final int SERVER_PORT = 6669;
 
-	private final File dexDir;
+	private File dexDir;
 	private File tmpFile;
 	private Socket serverSocket;
 
 	public HadroidService() {
-		dexDir = this.getApplicationContext().getDir("dex", 0);
+		super();
 		serverSocket = null;
 	}
 
@@ -58,8 +58,10 @@ public class HadroidService extends Service {
 
 	@Override
 	public void onCreate() {
+		super.onCreate();
 		Log.d(LOG_TAG, "onCreate");
 		Toast.makeText(this, " HadroidService created", Toast.LENGTH_LONG).show();
+		dexDir = this.getDir("dex", 0);
 	}
 
 	@Override
@@ -68,7 +70,7 @@ public class HadroidService extends Service {
 		Toast.makeText(this, "HadroidService started", Toast.LENGTH_LONG).show();
 		
 		try {
-			tmpFile = this.getCacheDir().createTempFile("tmp", "jar");
+			tmpFile = this.getCacheDir().createTempFile("tmp", ".jar");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -143,6 +145,8 @@ public class HadroidService extends Service {
 		                    // HadroidFunction class found
 		                    Log.i(LOG_TAG, "Found class: " + className);
 		                    //TODO instantiate the runnable thing
+		                    HadroidFunction fxn = (HadroidFunction) cls.newInstance();
+		                    fxn.run(tm.getTask().getData());
 		                    //blades.add((HadroidFunction) cls.newInstance());
 		                }
 		            }
@@ -156,6 +160,12 @@ public class HadroidService extends Service {
 				e.printStackTrace();
 			} catch (ClassNotFoundException e) {
 				Log.e(LOG_TAG, "ClassNotFoundException!");
+				e.printStackTrace();
+			} catch (InstantiationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} finally {
 				// close the socket

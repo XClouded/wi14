@@ -7,7 +7,7 @@ import uw.edu.hadroid.workflow.Pair;
 
 public class WordCounter extends HadroidMapReduceJob {
 
-    public WordCounter(String filePath) {
+    public WordCounter() {
         map = new WordCounterMap();
         reduce = new WordCounterReduce();
     }
@@ -15,7 +15,7 @@ public class WordCounter extends HadroidMapReduceJob {
 
     @Override
     public String getInputFilePath() {
-        return "/Users/isphrazy/Documents/study/CSE/550/hw/wi14/project/workspace/data/sh.txt";
+        return "/Users/isphrazy/Documents/study/CSE/550/hw/wi14/project/workspace/data/sh_ascii.txt";
     }
 
     @Override

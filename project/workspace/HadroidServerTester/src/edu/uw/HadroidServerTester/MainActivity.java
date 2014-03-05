@@ -24,8 +24,8 @@ import android.view.View;
 
 public class MainActivity extends Activity {
     
-    private final String SERVER_IP = "172.28.7.96";
-//    private final String SERVER_IP = "128.208.7.100";
+//    private final String SERVER_IP = "172.28.7.96";
+    private final String SERVER_IP = "10.0.2.2";
     private final int SERVER_PORT = 6669;
 
     @Override

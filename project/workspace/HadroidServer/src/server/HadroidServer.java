@@ -1,21 +1,26 @@
+package server;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Logger;
 
 import message.HadroidMessage;
 import message.RequestTaskMessage;
 import message.ResultMessage;
 import message.TaskMessage;
+import task.HadroidTask;
 import uw.edu.hadroid.workflow.HadroidMapReduceJob;
 
 public class HadroidServer {
@@ -24,69 +29,18 @@ public class HadroidServer {
     // The server socket.
     private int serverPort;
     private HadroidJobsManager jobsManager;
+    private Logger logger;
 
     public HadroidServer(int port) {
         serverPort = port;
         jobsManager = new HadroidJobsManager();
+        logger = Logger.getLogger(this.getClass().getName());
         
-        fillJobManager();
+        //for testing purpose. TODO remove this later
+        jobsManager.addHadroidJob("WordCounter");
         
     }
     
-    private void fillJobManager() {
-        Class cls = loadClass();
-        HadroidMapReduceJob job;
-        try {
-            job = (HadroidMapReduceJob) cls
-                    .getDeclaredConstructor(String.class)
-                    .newInstance("/Users/isphrazy/Documents/study/CSE/550/" +
-                            "hw/wi14/project/workspace/data/sh.txt");
-            jobsManager.addHadroidJob(job);
-        } catch (InstantiationException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IllegalArgumentException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (SecurityException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
-
-    private Class loadClass(){
-        File file1 = new File("/Users/isphrazy/Documents/study/CSE/550/hw/wi14/project/workspace/HadroidSampleMapReduce/bin/");
-//        File file2 = new File("/Users/isphrazy/Documents/study/CSE/550/hw/wi14/project/workspace/HadroidSampleMapReduce/bin/wordcounter/WordCounter$WordCounterReduce.class");
-//        File file3 = new File("/Users/isphrazy/Documents/study/CSE/550/hw/wi14/project/workspace/HadroidSampleMapReduce/bin/wordcounter/WordCounter$WordCounterMap.class");
-        try {
-            System.out.println(file1.exists());
-            System.out.println(file1.toURI().toURL());
-//            System.out.println(file1.exists() && file2.exists() && file3.exists());
-//            URL[] urls = new URL[]{file1.toURI().toURL(), file2.toURI().toURL(), file3.toURI().toURL()};
-            URL[] urls = {file1.toURI().toURL()};
-
-            ClassLoader parentClassLoader = this.getClass().getClassLoader();
-            // Create a new class loader with the directory
-            URLClassLoader cl = new URLClassLoader(urls);
-            return cl.loadClass("WordCounter");
-            
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } 
-        return null;
-    }
-
     public void start() {
 
         ServerSocket serverSocket = null;
@@ -127,7 +81,12 @@ public class HadroidServer {
                 System.out.println("request received");
                 HadroidMessage returnMsg = null;
                 if(msg instanceof RequestTaskMessage ){
-                    returnMsg = new TaskMessage(jobsManager.getNextTask());
+                    HadroidTask t = jobsManager.getNextTask();
+                    if(t == null){
+                        //no task available
+                    }else{
+                        returnMsg = new TaskMessage(t);
+                    }
                 }else if (msg instanceof ResultMessage){
                     //
                     

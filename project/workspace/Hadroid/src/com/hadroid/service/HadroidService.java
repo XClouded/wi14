@@ -145,8 +145,12 @@ public class HadroidService extends Service {
 		                    // HadroidFunction class found
 		                    Log.i(LOG_TAG, "Found class: " + className);
 		                    //TODO instantiate the runnable thing
-		                    HadroidFunction fxn = (HadroidFunction) cls.newInstance();
-		                    fxn.run(tm.getTask().getData());
+		                    if(tm.getTask() != null){
+		                        HadroidFunction fxn = (HadroidFunction) cls.newInstance();
+		                        fxn.run(tm.getTask().getData());
+		                    }else{
+		                        Log.i(LOG_TAG, "task is null");
+		                    }
 		                    //blades.add((HadroidFunction) cls.newInstance());
 		                }
 		            }

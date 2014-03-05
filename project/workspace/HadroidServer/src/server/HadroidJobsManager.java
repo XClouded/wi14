@@ -1,3 +1,8 @@
+package server;
+import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -21,6 +26,39 @@ public class HadroidJobsManager {
     
     public void addHadroidJob(HadroidMapReduceJob job){
         jobs.add(new HadroidJobDecomposer(job));
+    }
+    
+    public void addHadroidJob(String jobClassName){
+        Class cls = loadClass(jobClassName);
+        HadroidMapReduceJob job;
+        try {
+            job = (HadroidMapReduceJob) cls.newInstance();
+            addHadroidJob(job);
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        } catch (SecurityException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private Class loadClass(String className){
+        File file1 = new File("/Users/isphrazy/Documents/study/CSE/550/hw/wi14/project/workspace/HadroidSampleMapReduce/bin/");
+        try {
+            URL[] urls = {file1.toURI().toURL()};
+
+            URLClassLoader cl = new URLClassLoader(urls);
+            return cl.loadClass(className);
+            
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } 
+        return null;
     }
     
     /**

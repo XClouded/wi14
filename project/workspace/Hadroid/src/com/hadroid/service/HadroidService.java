@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
+import java.util.List;
 
 import uw.edu.hadroid.workflow.HadroidFunction;
 
@@ -137,23 +138,26 @@ public class HadroidService extends Service {
 							dexDir.getPath(), null, getClass().getClassLoader());
 					DexFile df = DexFile.loadDex(tmpFile.getAbsolutePath(),
 							new File(dexDir, tmpFile.getName() + ".odex").getAbsolutePath(), 0);
+					
+					List results = null;
+					
+					// find the HadroidFunction and apply it to the given data
 					for (Enumeration<String> iter = df.entries(); iter.hasMoreElements();) {
 		                String className = iter.nextElement();
 		                Log.i(LOG_TAG,"Found class: " + className);
 		                Class<?> cls = Class.forName(className, true, classLoader);
 		                if (HadroidFunction.class.isAssignableFrom(cls)) {
 		                    // HadroidFunction class found
-		                    Log.i(LOG_TAG, "Found class: " + className);
-		                    //TODO instantiate the runnable thing
-		                    if(tm.getTask() != null){
-		                        HadroidFunction fxn = (HadroidFunction) cls.newInstance();
-		                        fxn.run(tm.getTask().getData());
-		                    }else{
-		                        Log.i(LOG_TAG, "task is null");
-		                    }
-		                    //blades.add((HadroidFunction) cls.newInstance());
+		                    Log.i(LOG_TAG, "Found HadroidFunction: " + className);
+		                    HadroidFunction fxn = (HadroidFunction) cls.newInstance();
+		                    results = fxn.run(tm.getTask().getData());
+		                    
+		                    // only one HadroidFunction should exist
+		                    break;
 		                }
 		            }
+					
+					//TODO return the results
 				}				
 
 			} catch (UnknownHostException e) {
@@ -186,5 +190,14 @@ public class HadroidService extends Service {
 			return null;
 		}
 
+	}
+	
+	class Ticker extends AsyncTask<Void, Void, Void> {
+
+		@Override
+		protected Void doInBackground(Void... arg0) {
+			// TODO make a heartbeat signal... need the socket for this
+			return null;
+		}
 	}
 }

@@ -115,16 +115,16 @@ public class HadroidService extends Service {
 
 				InputStream in = serverSocket.getInputStream();
 				ObjectInputStream ois = new ObjectInputStream(in);
+				
+				// create a request message
+				HadroidMessage msg = new RequestTaskMessage();
+
+				// send the initial request message
+				oos.writeObject(new RequestTaskMessage());
+				Log.d(LOG_TAG, "message sent...");
 
 				// keep asking the server for tasks!
 				while(true) {
-					// create a request message
-					HadroidMessage msg = new RequestTaskMessage();
-
-					// send the message
-					oos.writeObject(new RequestTaskMessage());
-					Log.d(LOG_TAG, "message sent...");
-
 					// get a response
 					msg = (HadroidMessage) ois.readObject();
 					Log.d(LOG_TAG, "message received: " + msg);

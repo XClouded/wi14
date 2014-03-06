@@ -11,6 +11,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.UUID;
 
 import uw.edu.hadroid.workflow.HadroidFunction;
 
@@ -19,6 +20,7 @@ import dalvik.system.DexFile;
 
 import message.HadroidMessage;
 import message.RequestTaskMessage;
+import message.ResultMessage;
 import message.TaskMessage;
 import android.app.Service;
 import android.content.Intent;
@@ -69,7 +71,7 @@ public class HadroidService extends Service {
 	public void onStart(Intent intent, int startId) {
 		Log.d(LOG_TAG, "onStart");
 		Toast.makeText(this, "HadroidService started", Toast.LENGTH_LONG).show();
-		
+
 		try {
 			tmpFile = this.getCacheDir().createTempFile("tmp", ".jar");
 		} catch (IOException e) {
@@ -77,7 +79,7 @@ public class HadroidService extends Service {
 			e.printStackTrace();
 			Log.e(LOG_TAG, "IOException when making temp jar");
 		}
-		
+
 		Worker w = new Worker();
 		w.execute();
 	}
@@ -108,58 +110,64 @@ public class HadroidService extends Service {
 				serverSocket = new Socket(SERVER_IP, SERVER_PORT);
 				serverSocket.setTcpNoDelay(true);
 
-				// create a request message
-				HadroidMessage msg = new RequestTaskMessage();
-
-				// send the message
 				OutputStream outstream = serverSocket.getOutputStream(); 
 				ObjectOutputStream oos = new ObjectOutputStream(outstream);
-				oos.writeObject(new RequestTaskMessage());
-				Log.d(LOG_TAG, "message sent...");
 
-				// get a response
 				InputStream in = serverSocket.getInputStream();
 				ObjectInputStream ois = new ObjectInputStream(in);
-				msg = (HadroidMessage) ois.readObject();
-				Log.d(LOG_TAG, "message received: " + msg);
+
+				// keep asking the server for tasks!
+				while(true) {
+					// create a request message
+					HadroidMessage msg = new RequestTaskMessage();
+
+					// send the message
+					oos.writeObject(new RequestTaskMessage());
+					Log.d(LOG_TAG, "message sent...");
+
+					// get a response
+					msg = (HadroidMessage) ois.readObject();
+					Log.d(LOG_TAG, "message received: " + msg);
 
 
-				if (msg instanceof TaskMessage) {
-					Log.d(LOG_TAG, "TaskMessage received");
-					TaskMessage tm = (TaskMessage)msg;
-					
-					// write dex to disk
-					FileOutputStream out = new FileOutputStream(tmpFile);
-					out.write(tm.getTask().getDexFile());
-					out.close();
-					
-					// load in the dex file
-					DexClassLoader classLoader = new DexClassLoader(tmpFile.getPath(),
-							dexDir.getPath(), null, getClass().getClassLoader());
-					DexFile df = DexFile.loadDex(tmpFile.getAbsolutePath(),
-							new File(dexDir, tmpFile.getName() + ".odex").getAbsolutePath(), 0);
-					
-					List results = null;
-					
-					// find the HadroidFunction and apply it to the given data
-					for (Enumeration<String> iter = df.entries(); iter.hasMoreElements();) {
-		                String className = iter.nextElement();
-		                Log.i(LOG_TAG,"Found class: " + className);
-		                Class<?> cls = Class.forName(className, true, classLoader);
-		                if (HadroidFunction.class.isAssignableFrom(cls)) {
-		                    // HadroidFunction class found
-		                    Log.i(LOG_TAG, "Found HadroidFunction: " + className);
-		                    HadroidFunction fxn = (HadroidFunction) cls.newInstance();
-		                    results = fxn.run(tm.getTask().getData());
-		                    
-		                    // only one HadroidFunction should exist
-		                    break;
-		                }
-		            }
-					
-					//TODO return the results
-				}				
+					if (msg instanceof TaskMessage) {
+						Log.d(LOG_TAG, "TaskMessage received");
+						TaskMessage tm = (TaskMessage)msg;
 
+						// write dex to disk
+						FileOutputStream out = new FileOutputStream(tmpFile);
+						out.write(tm.getTask().getDexFile());
+						out.close();
+
+						// load in the dex file
+						DexClassLoader classLoader = new DexClassLoader(tmpFile.getPath(),
+								dexDir.getPath(), null, getClass().getClassLoader());
+						DexFile df = DexFile.loadDex(tmpFile.getAbsolutePath(),
+								new File(dexDir, tmpFile.getName() + ".odex").getAbsolutePath(), 0);
+
+						List results = null;
+
+						// find the HadroidFunction and apply it to the given data
+						for (Enumeration<String> iter = df.entries(); iter.hasMoreElements();) {
+							String className = iter.nextElement();
+							Log.i(LOG_TAG,"Found class: " + className);
+							Class<?> cls = Class.forName(className, true, classLoader);
+							if (HadroidFunction.class.isAssignableFrom(cls)) {
+								// HadroidFunction class found
+								Log.i(LOG_TAG, "Found HadroidFunction: " + className);
+								HadroidFunction fxn = (HadroidFunction) cls.newInstance();
+								results = fxn.run(tm.getTask().getData());
+
+								// only one HadroidFunction should exist
+								break;
+							}
+						}
+
+						// send the results back
+						ResultMessage rm = new ResultMessage(new UUID(0,0), results);
+						oos.writeObject(rm);
+					}				
+				}
 			} catch (UnknownHostException e) {
 				Log.e(LOG_TAG, "UnknownHostException");
 				e.printStackTrace();
@@ -191,7 +199,7 @@ public class HadroidService extends Service {
 		}
 
 	}
-	
+
 	class Ticker extends AsyncTask<Void, Void, Void> {
 
 		@Override

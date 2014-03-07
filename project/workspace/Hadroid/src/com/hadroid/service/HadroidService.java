@@ -164,7 +164,7 @@ public class HadroidService extends Service {
 						}
 
 						// send the results back
-						ResultMessage rm = new ResultMessage(new UUID(0,0), results);
+						ResultMessage rm = new ResultMessage(tm.getTask().getUuid(), results);
 						oos.writeObject(rm);
 					}				
 				}

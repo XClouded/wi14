@@ -120,7 +120,7 @@ public class HadroidService extends Service {
 				HadroidMessage msg = new RequestTaskMessage();
 
 				// send the initial request message
-				oos.writeObject(new RequestTaskMessage());
+				oos.writeObject(msg);
 				Log.d(LOG_TAG, "message sent...");
 
 				// keep asking the server for tasks!

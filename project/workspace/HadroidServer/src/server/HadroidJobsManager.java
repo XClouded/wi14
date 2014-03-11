@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 
+import message.ResultMessage;
 import task.HadroidTask;
 import uw.edu.hadroid.workflow.HadroidMapReduceJob;
 
@@ -87,5 +88,10 @@ public class HadroidJobsManager {
             }
         }
         return null;
+    }
+    
+    public void taskIsDone(ResultMessage msg){
+        HadroidJobDecomposer d = taskToDecomposer.get(msg.getTaskID());
+        d.taskIsDone(msg);
     }
 }

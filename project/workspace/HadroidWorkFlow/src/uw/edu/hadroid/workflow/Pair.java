@@ -1,6 +1,8 @@
 package uw.edu.hadroid.workflow;
 
-public class Pair<K, V> {
+import java.io.Serializable;
+
+public class Pair<K, V> implements Serializable{
     
     public K key;
     public V value;

@@ -38,8 +38,8 @@ import android.widget.Toast;
 public class HadroidService extends Service {
 	private static final String JAR_NAME = "tmp.jar";
 	private static final String LOG_TAG = "HadroidService";
-	private static final String SERVER_IP = "172.28.7.96";
-	//private static final String SERVER_IP = "169.254.33.128";
+	private static final String SERVER_IP = "172.28.7.16";
+//	private static final String SERVER_IP = "10.0.2.2";
 	private static final int SERVER_PORT = 6669;
 
 	private File dexDir;

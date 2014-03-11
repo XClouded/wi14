@@ -1,27 +1,21 @@
 package server;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 import message.HadroidMessage;
+import message.PingAliveMessage;
 import message.RequestTaskMessage;
 import message.ResultMessage;
 import message.TaskMessage;
 import task.HadroidTask;
-import uw.edu.hadroid.workflow.HadroidMapReduceJob;
 
 public class HadroidServer {
 
@@ -89,9 +83,13 @@ public class HadroidServer {
                     }
                 }else if (msg instanceof ResultMessage){
                     //
+                    jobsManager.taskIsDone((ResultMessage)msg);
                     
                     //create return message
                     returnMsg = new TaskMessage(jobsManager.getNextTask());
+                }else if(msg instanceof PingAliveMessage){
+                    UUID clientID = ((PingAliveMessage) msg).getClientID();
+                    
                 }
                 ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
                 oos.writeObject(returnMsg);

@@ -27,5 +27,9 @@ public abstract class HadroidMapReduceJob implements Serializable{
     public void setReduce(HadroidFunction reduce) {
         this.reduce = reduce;
     }
+    
+    public String getName(){
+        return this.getClass().getName();
+    }
 
 }

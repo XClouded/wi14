@@ -3,7 +3,7 @@ package message;
 import java.util.List;
 import java.util.UUID;
 
-public class ResultMessage extends HadroidMessage{
+public class ResultMessage extends MessageFromClient{
 
     /**
      * 
@@ -13,8 +13,8 @@ public class ResultMessage extends HadroidMessage{
     private UUID taskID;
     private List result;
     
-    public ResultMessage(UUID taskID, List result) {
-        super();
+    public ResultMessage(UUID clientID, UUID taskID, List result) {
+        super(clientID);
         this.taskID = taskID;
         this.result = result;
     }

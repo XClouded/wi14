@@ -39,7 +39,7 @@ public class HadroidService extends Service {
 	private static final String JAR_NAME = "tmp.jar";
 	private static final String LOG_TAG = "HadroidService";
 	private static final String SERVER_IP = "172.28.7.16";
-//	private static final String SERVER_IP = "10.0.2.2";
+	//private static final String SERVER_IP = "10.0.2.2";
 	private static final int SERVER_PORT = 6669;
 
 	private File dexDir;
@@ -110,18 +110,19 @@ public class HadroidService extends Service {
 				serverSocket = new Socket(SERVER_IP, SERVER_PORT);
 				serverSocket.setTcpNoDelay(true);
 
+				// open the output stream
 				OutputStream outstream = serverSocket.getOutputStream(); 
 				ObjectOutputStream oos = new ObjectOutputStream(outstream);
-
-				InputStream in = serverSocket.getInputStream();
-				ObjectInputStream ois = new ObjectInputStream(in);
 				
 				// create a request message
-				HadroidMessage msg = new RequestTaskMessage();
-
+				HadroidMessage msg = new RequestTaskMessage();				
+				
 				// send the initial request message
 				oos.writeObject(msg);
 				Log.d(LOG_TAG, "message sent...");
+
+				InputStream in = serverSocket.getInputStream();
+				ObjectInputStream ois = new ObjectInputStream(in);
 
 				// keep asking the server for tasks!
 				while(true) {

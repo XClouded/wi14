@@ -127,7 +127,7 @@ public class HadroidService extends Service {
 				InputStream in = serverSocket.getInputStream();
 				ObjectInputStream ois = new ObjectInputStream(in);
 
-				new Ticker().execute(oos);
+				new Ticker().execute(serverSocket);
 				
 				// keep asking the server for tasks!
 				while(serverSocket != null) {
@@ -206,18 +206,27 @@ public class HadroidService extends Service {
 
 	}
 
-	class Ticker extends AsyncTask<ObjectOutputStream, Void, Void> {
+	class Ticker extends AsyncTask<Socket, Void, Void> {
 
 		@Override
-		protected Void doInBackground(ObjectOutputStream... arg0) {
-			ObjectOutputStream toServer = arg0[0];
+		protected Void doInBackground(Socket... arg0) {
+			ObjectOutputStream toServer = null;
+			try {
+				toServer = new ObjectOutputStream(arg0[0].getOutputStream());
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
 			HadroidMessage ping = new PingAliveMessage(serviceUUID);
 			
 			while (serverSocket != null) {
 				try {
+					Log.d(LOG_TAG, "Ticker ticking...");
 					// send the alive ping
 					toServer.writeObject(ping);
 					
+					Log.d(LOG_TAG, "Ticker sleeping...");
 					// sleep 10 seconds
 					Thread.sleep(10*1000);
 				} catch (InterruptedException e) {

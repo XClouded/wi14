@@ -45,12 +45,13 @@ public class HadroidService extends Service {
 
 	private File dexDir;
 	private File tmpFile;
-	private Socket serverSocket;
+	private Socket workerSocket, tickerSocket;
 	private UUID serviceUUID;
 
 	public HadroidService() {
 		super();
-		serverSocket = null;
+		workerSocket = null;
+		tickerSocket = null;
 		serviceUUID = UUID.randomUUID();
 	}
 
@@ -83,8 +84,13 @@ public class HadroidService extends Service {
 			Log.e(LOG_TAG, "IOException when making temp jar");
 		}
 
+		Log.d(LOG_TAG,"starting worker...");
 		Worker w = new Worker();
 		w.execute();
+		
+		Log.d(LOG_TAG,"starting ticker...");
+		Ticker t = new Ticker();
+		t.start();
 	}
 
 	@Override
@@ -92,13 +98,22 @@ public class HadroidService extends Service {
 		Log.d(LOG_TAG, "onDestroy");
 		Toast.makeText(this, "HadroidService destroyed", Toast.LENGTH_LONG).show();
 
-		if(serverSocket != null) {
+		if(workerSocket != null) {
 			try {
-				serverSocket.close();
+				workerSocket.close();
 			} catch (IOException e) {
 				// eat the error
 			}
-			serverSocket = null;
+			workerSocket = null;
+		}
+
+		if(tickerSocket != null) {
+			try {
+				tickerSocket.close();
+			} catch (IOException e) {
+				// eat the error
+			}
+			tickerSocket = null;
 		}
 	}
 
@@ -110,27 +125,25 @@ public class HadroidService extends Service {
 			try {
 				// open the socket to the server
 				Log.d(LOG_TAG, "worker executing...");
-				serverSocket = new Socket(SERVER_IP, SERVER_PORT);
-				serverSocket.setTcpNoDelay(true);
+				workerSocket = new Socket(SERVER_IP, SERVER_PORT);
+				workerSocket.setTcpNoDelay(true);
 
 				// open the output stream
-				OutputStream outstream = serverSocket.getOutputStream(); 
+				OutputStream outstream = workerSocket.getOutputStream(); 
 				ObjectOutputStream oos = new ObjectOutputStream(outstream);
-				
+
 				// create a request message
 				HadroidMessage msg = new RequestTaskMessage(serviceUUID);				
-				
+
 				// send the initial request message
 				oos.writeObject(msg);
 				Log.d(LOG_TAG, "message sent...");
 
-				InputStream in = serverSocket.getInputStream();
+				InputStream in = workerSocket.getInputStream();
 				ObjectInputStream ois = new ObjectInputStream(in);
 
-				new Ticker().execute(serverSocket);
-				
 				// keep asking the server for tasks!
-				while(serverSocket != null) {
+				while(workerSocket != null) {
 					// get a response
 					msg = (HadroidMessage) ois.readObject();
 					Log.d(LOG_TAG, "message received: " + msg);
@@ -191,13 +204,13 @@ public class HadroidService extends Service {
 				e.printStackTrace();
 			} finally {
 				// close the socket
-				if (serverSocket != null) {
+				if (workerSocket != null) {
 					try {
-						serverSocket.close();
+						workerSocket.close();
 					} catch (IOException e) {
 						// I give up
 					}
-					serverSocket = null;
+					workerSocket = null;
 				}
 			}
 
@@ -206,41 +219,36 @@ public class HadroidService extends Service {
 
 	}
 
-	class Ticker extends AsyncTask<Socket, Void, Void> {
+	class Ticker extends Thread {
 
 		@Override
-		protected Void doInBackground(Socket... arg0) {
-			ObjectOutputStream toServer = null;
-			try {
-				toServer = new ObjectOutputStream(arg0[0].getOutputStream());
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-			
+		public void run() {
+			Log.d(LOG_TAG, "Ticker started...");
 			HadroidMessage ping = new PingAliveMessage(serviceUUID);
 			
-			while (serverSocket != null) {
-				try {
+			try {
+				tickerSocket = new Socket(SERVER_IP, SERVER_PORT);
+				tickerSocket.setTcpNoDelay(true);
+
+				ObjectOutputStream toServer = new ObjectOutputStream(tickerSocket.getOutputStream());
+				
+				while (tickerSocket != null) {
 					Log.d(LOG_TAG, "Ticker ticking...");
 					// send the alive ping
 					toServer.writeObject(ping);
-					
+
 					Log.d(LOG_TAG, "Ticker sleeping...");
+
 					// sleep 10 seconds
-					Thread.sleep(10*1000);
-				} catch (InterruptedException e) {
-					Log.e(LOG_TAG, "InterruptedException in Ticker");
-					e.printStackTrace();
-					break;
-				} catch (IOException e) {
-					Log.e(LOG_TAG, "IOException in Ticker");
-					e.printStackTrace();
-					break;
+					Thread.sleep(1*1000);
 				}
+			} catch (InterruptedException e) {
+				Log.e(LOG_TAG, "InterruptedException in Ticker");
+				e.printStackTrace();
+			} catch (IOException e) {
+				Log.e(LOG_TAG, "IOException in Ticker");
+				e.printStackTrace();
 			}
-			
-			return null;
 		}
 	}
 }

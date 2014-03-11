@@ -19,6 +19,7 @@ import dalvik.system.DexClassLoader;
 import dalvik.system.DexFile;
 
 import message.HadroidMessage;
+import message.PingAliveMessage;
 import message.RequestTaskMessage;
 import message.ResultMessage;
 import message.TaskMessage;
@@ -45,10 +46,12 @@ public class HadroidService extends Service {
 	private File dexDir;
 	private File tmpFile;
 	private Socket serverSocket;
+	private UUID serviceUUID;
 
 	public HadroidService() {
 		super();
 		serverSocket = null;
+		serviceUUID = UUID.randomUUID();
 	}
 
 	@Override
@@ -124,6 +127,8 @@ public class HadroidService extends Service {
 				InputStream in = serverSocket.getInputStream();
 				ObjectInputStream ois = new ObjectInputStream(in);
 
+				new Ticker().execute(oos);
+				
 				// keep asking the server for tasks!
 				while(true) {
 					// get a response
@@ -201,12 +206,28 @@ public class HadroidService extends Service {
 
 	}
 
-	class Ticker extends AsyncTask<Void, Void, Void> {
+	class Ticker extends AsyncTask<ObjectOutputStream, Void, Void> {
 
 		@Override
-		protected Void doInBackground(Void... arg0) {
-			// TODO make a heartbeat signal... need the socket for this
-			return null;
+		protected Void doInBackground(ObjectOutputStream... arg0) {
+			ObjectOutputStream toServer = arg0[0];
+			HadroidMessage ping = new PingAliveMessage(serviceUUID);
+			
+			while (true) {
+				try {
+					// send the alive ping
+					toServer.writeObject(ping);
+					
+					// sleep 10 seconds
+					Thread.sleep(10*1000);
+				} catch (InterruptedException e) {
+					Log.e(LOG_TAG, "InterruptedException in Ticker");
+					e.printStackTrace();
+				} catch (IOException e) {
+					Log.e(LOG_TAG, "IOException in Ticker");
+					e.printStackTrace();
+				}
+			}
 		}
 	}
 }

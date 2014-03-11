@@ -130,7 +130,7 @@ public class HadroidService extends Service {
 				new Ticker().execute(oos);
 				
 				// keep asking the server for tasks!
-				while(true) {
+				while(serverSocket != null) {
 					// get a response
 					msg = (HadroidMessage) ois.readObject();
 					Log.d(LOG_TAG, "message received: " + msg);
@@ -213,7 +213,7 @@ public class HadroidService extends Service {
 			ObjectOutputStream toServer = arg0[0];
 			HadroidMessage ping = new PingAliveMessage(serviceUUID);
 			
-			while (true) {
+			while (serverSocket != null) {
 				try {
 					// send the alive ping
 					toServer.writeObject(ping);
@@ -223,11 +223,15 @@ public class HadroidService extends Service {
 				} catch (InterruptedException e) {
 					Log.e(LOG_TAG, "InterruptedException in Ticker");
 					e.printStackTrace();
+					break;
 				} catch (IOException e) {
 					Log.e(LOG_TAG, "IOException in Ticker");
 					e.printStackTrace();
+					break;
 				}
 			}
+			
+			return null;
 		}
 	}
 }

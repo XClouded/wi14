@@ -118,7 +118,7 @@ public class HadroidService extends Service {
 				ObjectOutputStream oos = new ObjectOutputStream(outstream);
 				
 				// create a request message
-				HadroidMessage msg = new RequestTaskMessage();				
+				HadroidMessage msg = new RequestTaskMessage(serviceUUID);				
 				
 				// send the initial request message
 				oos.writeObject(msg);
@@ -170,7 +170,7 @@ public class HadroidService extends Service {
 						}
 
 						// send the results back
-						ResultMessage rm = new ResultMessage(tm.getTask().getUuid(), results);
+						ResultMessage rm = new ResultMessage(serviceUUID, tm.getTask().getUuid(), results);
 						oos.writeObject(rm);
 					}				
 				}

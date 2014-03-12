@@ -22,6 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -59,6 +60,7 @@ public class HadroidJobDecomposer {
     private String intermediateDir;
     private Logger logger;
     private Phase phase;
+    private PrintWriter resultWriter;
     
     public HadroidJobDecomposer(HadroidMapReduceJob job){
         this.job = job;
@@ -67,7 +69,6 @@ public class HadroidJobDecomposer {
         mapInProgress = new HashMap<UUID, HadroidTask>();
         mapDone = new HashSet<HadroidTask>();
         intermediateKeysUndone = new LinkedHashSet<String>();
-//        intermediateKeysInProgress = new HashSet<String>();
         reduceTasks = new HashMap<UUID, HadroidTask>();
         
         logger = Logger.getLogger(this.getClass().getName());
@@ -75,8 +76,9 @@ public class HadroidJobDecomposer {
         try {
             raf = new BufferedRandomAccessFile(job.getInputFilePath(), "r");
             setupChunks();
-            phase = Phase.MAP;
-            setupFolder();
+            setupTmpFiles();
+            setupForOutput();
+           
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -84,11 +86,20 @@ public class HadroidJobDecomposer {
         }
     }
     
-    private void setupFolder() throws IOException {
+    private void setupForOutput() throws IOException {
+        String outputFilePath = job.getOutputFilePath();
+        File outputFile = new File(outputFilePath);
+        outputFile.getParentFile().mkdirs();
+        outputFile.createNewFile();
+        resultWriter = new PrintWriter(new BufferedWriter(new FileWriter(outputFilePath, true)));
+    }
+
+    private void setupTmpFiles() throws IOException {
         File tmp = new File("db/" + job.getName() + "/tmp/");
-        File output = new File("db/" + job.getName() + "/output/");
-        if(!tmp.exists()) tmp.mkdirs();
-        if(!output.exists()) output.mkdirs();
+        //remove file if already exists
+        tmp.deleteOnExit();
+        //create new dirs
+        tmp.mkdirs();
     }
 
     /**
@@ -118,6 +129,7 @@ public class HadroidJobDecomposer {
         if(chunkSize > 0){ //something remains
             chunkUndone.add(new FileChunk(chunkStart, (int)chunkSize));
         }
+        phase = Phase.MAP;
 //        reader.close();
     }
     
@@ -126,13 +138,16 @@ public class HadroidJobDecomposer {
      * 
      * @return true when this job is finished
      */
-    public boolean isJobDone(){
+    public boolean isJobCompleted(){
         return phase == Phase.COMPLETE;
     }
     
     public void taskIsDone(ResultMessage msg){
         UUID taskID = msg.getTaskID();
         List result = msg.getResult();
+        if(result == null){
+            logger.info("null result received, soemthing is wrong with map reduce function or parsing");
+        }
 //        if(chunkInProgress.)
         if(phase == Phase.MAP){ //currently in map phase
             //record this update
@@ -174,17 +189,26 @@ public class HadroidJobDecomposer {
             }
             Pair p = (Pair)o;
             //TODO generalize this
+            if(new Random().nextFloat() < 0.9) continue;
             result.add((String)p.key);
         }
         return result;
     }
 
-    private void saveIntermediateResult(List result) throws IOException{
-        writeKeyValuesToDisk(result, "tmp");
-    }
-    
     private void saveFinalResult(List result) throws IOException{
-        writeKeyValuesToDisk(result, "output");
+        logger.severe("save final result with size: " + result.size());
+        for(Object o : result){
+            if(!(o instanceof Pair)){
+                logger.severe("result element has wrong type");
+                return;
+            }
+            Pair p = (Pair)o;
+            
+            logger.severe("key: " + p.key + " value: " + p.value);
+            resultWriter.println(p.key);
+            resultWriter.println(p.value);
+        }
+        resultWriter.flush();
     }
     
     /**
@@ -192,7 +216,7 @@ public class HadroidJobDecomposer {
      * @param result
      * @throws IOException 
      */
-    private void writeKeyValuesToDisk(List result, String subdir) throws IOException {
+    private void saveIntermediateResult(List result) throws IOException {
         Map<Object, PrintWriter> keyToChannel = new HashMap<Object, PrintWriter>();
         for(Object o : result){
             if(!(o instanceof Pair)){
@@ -200,18 +224,19 @@ public class HadroidJobDecomposer {
                 return;
             }
             Pair p = (Pair)o;
-            logger.severe("key: " + p.key + " value: " + p.value);
-            
+//            logger.severe("key: " + p.key + " value: " + p.value);
+            PrintWriter writer = null;
             if(keyToChannel.containsKey(p.key)){
-                PrintWriter writer = keyToChannel.get(p.key);
-                writer.append(p.value.toString() + "\n");
+                writer = keyToChannel.get(p.key);
             }else{
-                String filePath = DATABASE_LOCATION + job.getName() + "/" + subdir + "/" + p.key + ".interm";
+                String filePath = DATABASE_LOCATION + job.getName() + "/tmp/" + p.key + ".interm";
                 File f = new File(filePath);
                 f.createNewFile();
-                PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(filePath, true)));
+                writer = new PrintWriter(new BufferedWriter(new FileWriter(filePath, true)));
                 keyToChannel.put(p.key, writer);
             }
+            
+            writer.println(p.value);
         }
         //close all the writers. 
         for(PrintWriter writer : keyToChannel.values()){
@@ -245,23 +270,40 @@ public class HadroidJobDecomposer {
     //        }else if(mapInProgress.isEmpty()){//all map work is done
             }else if(phase == Phase.REDUCE){//all map work is done
                 //TODO return some reduce task if available
+                if(intermediateKeysUndone.isEmpty()) return null;
                 String nextKey = intermediateKeysUndone.iterator().next();
 //                intermediateKeysInProgress.add(nextKey);
     //            File f = new File(DATABASE_LOCATION + job.getName() + "/tmp/" + nextKey + ".interm");
                 String fileName = DATABASE_LOCATION + job.getName() + "/tmp/" + nextKey + ".interm";
                 byte[] data = Files.readAllBytes(Paths.get(fileName));
-                List<String> intermediatePairs = parseInputData(data);
+//                List<String> intermediatePairs = parseInputData(data);
+                List<Pair<String, String>> intermediatePairs = parseIntermediateData(nextKey, data);
                 String dexFilePath = "/Users/isphrazy/Documents/study/CSE/550/hw/wi14/project/workspace/HadroidSampleMapReduce/WordCounterReduceDex.jar";
                 task = new HadroidTask(intermediatePairs, 
                         dexFileToByteArray(dexFilePath), 
                         job.getReduce().getClass().getName(), 
                         UUID.randomUUID());
                 reduceTasks.put(task.getUuid(), task);
+                intermediateKeysUndone.remove(nextKey);
+                logger.severe("keys remains count: " + intermediateKeysUndone.size());
+//                intermediateKeysUndone.
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
         return task;
+    }
+
+    private List<Pair<String, String>> parseIntermediateData(String key, byte[] data) throws IOException {
+        List<Pair<String, String>> result = new LinkedList<Pair<String, String>>();
+        InputStream is = new ByteArrayInputStream(data);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        String line = null;
+        while((line = reader.readLine()) != null){
+            if(line.trim().isEmpty()) continue;//ignore empty line
+            result.add(new Pair<String, String>(key, line));
+        }
+        return result;
     }
 
     private byte[] dexFileToByteArray(String dexFilePath) throws FileNotFoundException, IOException {

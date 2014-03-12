@@ -77,7 +77,7 @@ public class HadroidJobsManager {
         Iterator<HadroidJobDecomposer> it = jobs.iterator();
         while(it.hasNext()){
             HadroidJobDecomposer currentDecomposer = it.next();
-            if(currentDecomposer.isJobDone()) {
+            if(currentDecomposer.isJobCompleted()) {
                 it.remove();
                 continue;
             }
@@ -93,5 +93,6 @@ public class HadroidJobsManager {
     public void taskIsDone(ResultMessage msg){
         HadroidJobDecomposer d = taskToDecomposer.get(msg.getTaskID());
         d.taskIsDone(msg);
+        if(d.isJobCompleted()) taskToDecomposer.remove(d);
     }
 }

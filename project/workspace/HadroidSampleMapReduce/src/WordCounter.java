@@ -15,7 +15,7 @@ public class WordCounter extends HadroidMapReduceJob {
 
     @Override
     public String getInputFilePath() {
-        return "/Users/isphrazy/Documents/study/CSE/550/hw/wi14/project/workspace/data/sh_ascii.txt";
+        return "/Users/isphrazy/Documents/study/CSE/550/hw/wi14/project/workspace/data/short.txt";
     }
 
     @Override

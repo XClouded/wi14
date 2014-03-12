@@ -24,6 +24,7 @@ public class HadroidServer {
     private int serverPort;
     private HadroidJobsManager jobsManager;
     private Logger logger;
+    
 
     public HadroidServer(int port) {
         serverPort = port;
@@ -71,34 +72,44 @@ public class HadroidServer {
             try {
                 InputStream in = socket.getInputStream();
                 ObjectInputStream ois = new ObjectInputStream(in);
-                HadroidMessage msg = (HadroidMessage) ois.readObject();
-                System.out.println("request received");
-                HadroidMessage returnMsg = null;
-                if(msg instanceof RequestTaskMessage ){
-                    HadroidTask t = jobsManager.getNextTask();
-                    if(t == null){
-                        //no task available
-                    }else{
-                        returnMsg = new TaskMessage(t);
-                    }
-                }else if (msg instanceof ResultMessage){
-                    //
-                    jobsManager.taskIsDone((ResultMessage)msg);
-                    
-                    //create return message
-                    returnMsg = new TaskMessage(jobsManager.getNextTask());
-                }else if(msg instanceof PingAliveMessage){
-                    UUID clientID = ((PingAliveMessage) msg).getClientID();
-                    
-                }
                 ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-                oos.writeObject(returnMsg);
+                while(!socket.isClosed()){
+                        logger.severe("waiting....");
+                        HadroidMessage msg = (HadroidMessage) ois.readObject();
+                        System.out.println("request received");
+                        HadroidMessage returnMsg = null;
+                        if(msg instanceof RequestTaskMessage ){
+                            logger.severe("received RequestTaskMessage");
+                            HadroidTask t = jobsManager.getNextTask();
+                            if(t == null){
+                                //no task available
+                            }else{
+                                returnMsg = new TaskMessage(t);
+//                                logger.severe(returnMsg)
+                            }
+                        }else if (msg instanceof ResultMessage){
+                            //
+                            logger.severe("received ResultMessage");
+                            jobsManager.taskIsDone((ResultMessage)msg);
+                            HadroidTask task = jobsManager.getNextTask();
+                            if(task == null){
+                                //TODO NO MORE TASK IS AVAILABLE
+                            }else{
+                                returnMsg = new TaskMessage(jobsManager.getNextTask());
+                            }
+                        }
+//                        else if(msg instanceof PingAliveMessage){
+//                            logger.severe("received ping message");
+//                            UUID clientID = ((PingAliveMessage) msg).getClientID();
+//                            
+//                        }
+                        oos.writeObject(returnMsg);
+                }
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
-                
             } catch (IOException e1) {
                 e1.printStackTrace();
-            }
+            } 
         }
     }
 

@@ -88,9 +88,9 @@ public class HadroidService extends Service {
 		Worker w = new Worker();
 		w.execute();
 		
-		Log.d(LOG_TAG,"starting ticker...");
-		Ticker t = new Ticker();
-		t.start();
+//		Log.d(LOG_TAG,"starting ticker...");
+//		Ticker t = new Ticker();
+//		t.start();
 	}
 
 	@Override
@@ -176,7 +176,6 @@ public class HadroidService extends Service {
 								Log.i(LOG_TAG, "Found HadroidFunction: " + className);
 								HadroidFunction fxn = (HadroidFunction) cls.newInstance();
 								results = fxn.run(tm.getTask().getData());
-
 								// only one HadroidFunction should exist
 								break;
 							}

@@ -13,7 +13,6 @@ public class WordCounterReduce  extends HadroidFunction {
             System.err.println("input to reduce function is null");
             return null;
         }
-        System.out.println("input size: " + input.size());
         List<Pair<String, Integer>> result = new LinkedList<Pair<String, Integer>>();//key word to count
         Map<String, Integer> keyToCount = new HashMap<String, Integer>();
         for(Object o : input){

@@ -39,6 +39,7 @@ import uw.edu.hadroid.workflow.Pair;
 public class HadroidJobDecomposer {
 
     private final static int DATA_CHUNK_SIZE = 256 * 1024; //256K
+    private final static int INTERMEDIATE_HASH = 10;
     private final static String DATABASE_LOCATION = "db/";
     
     private enum Phase{
@@ -54,7 +55,7 @@ public class HadroidJobDecomposer {
     private Map<UUID, HadroidTask> mapInProgress;
     //input chunk that is finished
     private Set<HadroidTask> mapDone;
-    private Set<String> intermediateKeysUndone;
+    private Set<Integer> intermediateSlotsUndone;
 //    private Set<String> intermediateKeysInProgress;
     private Map<UUID, HadroidTask> reduceTasks;
     private String intermediateDir;
@@ -68,7 +69,10 @@ public class HadroidJobDecomposer {
         chunkUndone = new LinkedList<FileChunk>();
         mapInProgress = new HashMap<UUID, HadroidTask>();
         mapDone = new HashSet<HadroidTask>();
-        intermediateKeysUndone = new LinkedHashSet<String>();
+        intermediateSlotsUndone = new LinkedHashSet<Integer>();
+        for(int i = 0; i < INTERMEDIATE_HASH; i++){
+            intermediateSlotsUndone.add(i);
+        }
         reduceTasks = new HashMap<UUID, HadroidTask>();
         
         logger = Logger.getLogger(this.getClass().getName());
@@ -95,11 +99,14 @@ public class HadroidJobDecomposer {
     }
 
     private void setupTmpFiles() throws IOException {
-        File tmp = new File("db/" + job.getName() + "/tmp/");
+        File tmp = new File(DATABASE_LOCATION + job.getName() + "/tmp");
         //remove file if already exists
-        tmp.deleteOnExit();
+        for(File f : tmp.listFiles()){
+            f.delete();
+        }
         //create new dirs
         tmp.mkdirs();
+        
     }
 
     /**
@@ -153,7 +160,7 @@ public class HadroidJobDecomposer {
             //record this update
             HadroidTask task = mapInProgress.get(taskID);
             
-            intermediateKeysUndone.addAll(getKeysFromResult(result));
+//            intermediateKeysUndone.addAll(getKeysFromResult(result));
             //partition and write to disk
             try {
                 saveIntermediateResult(result);
@@ -204,7 +211,6 @@ public class HadroidJobDecomposer {
             }
             Pair p = (Pair)o;
             
-            logger.severe("key: " + p.key + " value: " + p.value);
             resultWriter.println(p.key);
             resultWriter.println(p.value);
         }
@@ -217,7 +223,7 @@ public class HadroidJobDecomposer {
      * @throws IOException 
      */
     private void saveIntermediateResult(List result) throws IOException {
-        Map<Object, PrintWriter> keyToChannel = new HashMap<Object, PrintWriter>();
+        Map<Integer, PrintWriter> keyToChannel = new HashMap<Integer, PrintWriter>();
         for(Object o : result){
             if(!(o instanceof Pair)){
                 logger.severe("result element has wrong type");
@@ -226,16 +232,18 @@ public class HadroidJobDecomposer {
             Pair p = (Pair)o;
 //            logger.severe("key: " + p.key + " value: " + p.value);
             PrintWriter writer = null;
-            if(keyToChannel.containsKey(p.key)){
-                writer = keyToChannel.get(p.key);
+            int slot = Math.abs(p.key.hashCode()) % INTERMEDIATE_HASH;
+            if(keyToChannel.containsKey(slot)){
+                writer = keyToChannel.get(slot);
             }else{
-                String filePath = DATABASE_LOCATION + job.getName() + "/tmp/" + p.key + ".interm";
+                String filePath = DATABASE_LOCATION + job.getName() + "/tmp/" + slot;
                 File f = new File(filePath);
                 f.createNewFile();
                 writer = new PrintWriter(new BufferedWriter(new FileWriter(filePath, true)));
-                keyToChannel.put(p.key, writer);
+                keyToChannel.put(slot, writer);
             }
             
+            writer.println(p.key);
             writer.println(p.value);
         }
         //close all the writers. 
@@ -269,24 +277,19 @@ public class HadroidJobDecomposer {
                 mapInProgress.put(task.getUuid(), task);
     //        }else if(mapInProgress.isEmpty()){//all map work is done
             }else if(phase == Phase.REDUCE){//all map work is done
-                //TODO return some reduce task if available
-                if(intermediateKeysUndone.isEmpty()) return null;
-                String nextKey = intermediateKeysUndone.iterator().next();
-//                intermediateKeysInProgress.add(nextKey);
-    //            File f = new File(DATABASE_LOCATION + job.getName() + "/tmp/" + nextKey + ".interm");
-                String fileName = DATABASE_LOCATION + job.getName() + "/tmp/" + nextKey + ".interm";
+                if(intermediateSlotsUndone.isEmpty()) return null;
+                int nextSlot = intermediateSlotsUndone.iterator().next();
+                String fileName = DATABASE_LOCATION + job.getName() + "/tmp/" + nextSlot;
                 byte[] data = Files.readAllBytes(Paths.get(fileName));
-//                List<String> intermediatePairs = parseInputData(data);
-                List<Pair<String, String>> intermediatePairs = parseIntermediateData(nextKey, data);
+                List<Pair<String, String>> intermediatePairs = parseIntermediateData(nextSlot, data);
                 String dexFilePath = "/Users/isphrazy/Documents/study/CSE/550/hw/wi14/project/workspace/HadroidSampleMapReduce/WordCounterReduceDex.jar";
                 task = new HadroidTask(intermediatePairs, 
                         dexFileToByteArray(dexFilePath), 
                         job.getReduce().getClass().getName(), 
                         UUID.randomUUID());
                 reduceTasks.put(task.getUuid(), task);
-                intermediateKeysUndone.remove(nextKey);
-                logger.severe("keys remains count: " + intermediateKeysUndone.size());
-//                intermediateKeysUndone.
+                intermediateSlotsUndone.remove(nextSlot);
+                logger.severe("keys remains count: " + intermediateSlotsUndone.size());
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -294,14 +297,16 @@ public class HadroidJobDecomposer {
         return task;
     }
 
-    private List<Pair<String, String>> parseIntermediateData(String key, byte[] data) throws IOException {
+    private List<Pair<String, String>> parseIntermediateData(int slot, byte[] data) throws IOException {
         List<Pair<String, String>> result = new LinkedList<Pair<String, String>>();
         InputStream is = new ByteArrayInputStream(data);
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-        String line = null;
-        while((line = reader.readLine()) != null){
-            if(line.trim().isEmpty()) continue;//ignore empty line
-            result.add(new Pair<String, String>(key, line));
+        String key = null;
+        while((key = reader.readLine()) != null){
+            if(key.trim().isEmpty()) continue;//ignore empty line
+            String value = reader.readLine();
+            while(value.trim().isEmpty()) value = reader.readLine();
+            result.add(new Pair<String, String>(key, value));
         }
         return result;
     }

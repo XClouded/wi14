@@ -245,12 +245,12 @@ public class HadroidService extends Service {
 		public void run() {
 			Log.d(LOG_TAG, "Ticker started...");
 			HadroidMessage ping = new PingAliveMessage(serviceUUID);
-			
+			ObjectOutputStream toServer = null;
 			try {
 				tickerSocket = new Socket(SERVER_IP, SERVER_PORT);
 				tickerSocket.setTcpNoDelay(true);
 
-				ObjectOutputStream toServer = new ObjectOutputStream(tickerSocket.getOutputStream());
+				toServer = new ObjectOutputStream(tickerSocket.getOutputStream());
 				
 				while (tickerSocket != null) {
 					Log.d(LOG_TAG, "Ticker ticking...");
@@ -268,6 +268,23 @@ public class HadroidService extends Service {
 			} catch (IOException e) {
 				Log.e(LOG_TAG, "IOException in Ticker");
 				e.printStackTrace();
+			} finally {
+				// free up resources
+				if (tickerSocket != null) {
+					try {
+						tickerSocket.close();
+					} catch (IOException e) {
+						// I give up
+					}
+					tickerSocket = null;
+				}
+				if(toServer != null) {
+					try {
+						toServer.close();
+					} catch (IOException e) {
+						// cant do anything
+					}
+				}
 			}
 		}
 	}
